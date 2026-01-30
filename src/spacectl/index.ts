@@ -1,4 +1,4 @@
-export { exec } from "./exec";
+export { exec, SpacectlExecError } from "./exec";
 export type { ExecOptions, ExecResult } from "./exec";
 
 export { install } from "./installer";

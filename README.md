@@ -17,8 +17,8 @@ Install and execute the [spacectl](https://github.com/namespacelabs/space) CLI.
 ```typescript
 import { install, exec } from "@namespacelabs/actions-toolkit/spacectl";
 
-const { binPath, version } = await install();
-const result = await exec(binPath, ["cache", "modes"]);
+await install();
+const result = await exec(["cache", "modes"]);
 ```
 
 See [spacectl documentation](src/spacectl/README.md) for detailed usage.

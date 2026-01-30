@@ -1,4 +1,3 @@
-import * as core from "@actions/core";
 import * as actionsExec from "@actions/exec";
 
 export type ExecOptions = Omit<
@@ -8,11 +7,34 @@ export type ExecOptions = Omit<
 
 export type ExecResult = actionsExec.ExecOutput;
 
+export class SpacectlExecError extends Error {
+  readonly exitCode: number;
+  readonly stdout: string;
+  readonly stderr: string;
+  readonly command: string;
+
+  constructor(
+    message: string,
+    exitCode: number,
+    stdout: string,
+    stderr: string,
+    command: string,
+    cause?: unknown
+  ) {
+    super(message, cause !== undefined ? { cause } : undefined);
+    this.name = "SpacectlExecError";
+    this.exitCode = exitCode;
+    this.stdout = stdout;
+    this.stderr = stderr;
+    this.command = command;
+  }
+}
+
 export async function exec(
-  binPath: string,
   args: string[],
-  options?: ExecOptions
+  options?: ExecOptions & { binPath?: string }
 ): Promise<ExecResult> {
+  const binPath = options?.binPath ?? "space"; // install() should have added to path by default
   const execArgs = [...args, "--output=json"];
 
   let stdout = "";
@@ -37,7 +59,8 @@ export async function exec(
   });
 
   if (exitCode !== 0) {
-    let errorMessage = `'${binPath} ${execArgs.join(" ")}' failed with exit code ${exitCode}`;
+    const command = `${binPath} ${execArgs.join(" ")}`;
+    let errorMessage = `'${command}' failed with exit code ${exitCode}`;
     try {
       const errorJson = JSON.parse(stdout.trim());
       if (errorJson.message) {
@@ -46,8 +69,7 @@ export async function exec(
     } catch {
       // stdout wasn't valid JSON, use default message
     }
-    core.error(errorMessage);
-    process.exit(exitCode);
+    throw new SpacectlExecError(errorMessage, exitCode, stdout, stderr, command);
   }
 
   return { exitCode, stdout, stderr };

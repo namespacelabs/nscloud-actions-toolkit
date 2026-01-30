@@ -4,7 +4,7 @@ import * as io from "@actions/io";
 import * as tc from "@actions/tool-cache";
 
 import { exec } from "./exec";
-import { getPlatform, getArch, getBinaryName } from "./platform";
+import { getPlatform, getArch, getBinaryName, type Platform, type Arch } from "./platform";
 import { resolveVersion, normalizeVersion } from "./version";
 
 const TOOL_NAME = "space";
@@ -14,6 +14,10 @@ const REPO_NAME = "space";
 export interface InstallOptions {
   version?: string;
   githubToken?: string;
+  /** Check for existing binary before downloading. @default true */
+  useSystemBinary?: boolean;
+  /** Add binary directory to PATH via core.addPath(). @default true */
+  addToPath?: boolean;
 }
 
 export interface InstallResult {
@@ -23,19 +27,18 @@ export interface InstallResult {
 
 export type SpacectlInstallErrorCode =
   | "UNSUPPORTED_PLATFORM"
+  | "UNSUPPORTED_ARCH"
   | "RESOLVE_VERSION_FAILED"
   | "DOWNLOAD_FAILED"
   | "EXEC_FAILED";
 
 export class SpacectlInstallError extends Error {
   readonly code: SpacectlInstallErrorCode;
-  readonly cause?: unknown;
 
   constructor(message: string, code: SpacectlInstallErrorCode, cause?: unknown) {
-    super(message);
+    super(message, { cause });
     this.name = "SpacectlInstallError";
     this.code = code;
-    this.cause = cause;
   }
 }
 
@@ -66,7 +69,7 @@ async function findExistingBinary(): Promise<string | undefined> {
 }
 
 async function getInstalledVersion(binPath: string): Promise<string> {
-  const result = await exec(binPath, ["version"]);
+  const result = await exec(["version"], { binPath });
 
   try {
     const parsed = JSON.parse(result.stdout.trim());
@@ -77,17 +80,18 @@ async function getInstalledVersion(binPath: string): Promise<string> {
   }
 }
 
-function getDownloadUrl(version: string): string {
-  const platform = getPlatform();
-  const arch = getArch();
+export function getDownloadUrl(version: string, platform: Platform, arch: Arch): string {
   const filename = `${TOOL_NAME}_${version}_${platform}_${arch}.tar.gz`;
   return `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/v${version}/${filename}`;
 }
 
-async function downloadAndCache(version: string, token?: string): Promise<string> {
-  const platform = getPlatform();
-  const arch = getArch();
-  const url = getDownloadUrl(version);
+async function downloadAndCache(
+  version: string,
+  platform: Platform,
+  arch: Arch,
+  token?: string
+): Promise<string> {
+  const url = getDownloadUrl(version, platform, arch);
 
   core.info(`Downloading spacectl ${version} from ${url}`);
 
@@ -117,8 +121,9 @@ export async function install(options: InstallOptions = {}): Promise<InstallResu
   const versionSpec = options.version ?? "";
   const token = options.githubToken ?? process.env.GITHUB_TOKEN;
 
+  let platform: Platform;
   try {
-    getPlatform();
+    platform = getPlatform();
   } catch (error) {
     throw new SpacectlInstallError(
       `Unsupported platform: ${process.platform}`,
@@ -127,14 +132,27 @@ export async function install(options: InstallOptions = {}): Promise<InstallResu
     );
   }
 
-  const arch = getArch();
+  let arch: Arch;
+  try {
+    arch = getArch();
+  } catch (error) {
+    throw new SpacectlInstallError(
+      `Unsupported architecture: ${process.arch}`,
+      "UNSUPPORTED_ARCH",
+      error
+    );
+  }
+
   const binaryName = getBinaryName();
 
-  if (versionSpec === "") {
+  if (versionSpec === "" && options.useSystemBinary !== false) {
     const existingPath = await findExistingBinary();
     if (existingPath) {
       const version = await getInstalledVersion(existingPath);
       core.info(`Using existing spacectl ${version} at ${existingPath}`);
+      if (options.addToPath !== false) {
+        core.addPath(path.dirname(existingPath));
+      }
       return {
         binPath: existingPath,
         version,
@@ -161,16 +179,23 @@ export async function install(options: InstallOptions = {}): Promise<InstallResu
   if (cached) {
     const binPath = path.join(cached, binaryName);
     core.info(`Using cached spacectl ${targetVersion} at ${cached}`);
+    if (options.addToPath !== false) {
+      core.addPath(cached);
+    }
     return {
       binPath,
       version: targetVersion,
     };
   }
 
-  const cachedDir = await downloadAndCache(targetVersion, token);
+  const cachedDir = await downloadAndCache(targetVersion, platform, arch, token);
   const binPath = path.join(cachedDir, binaryName);
 
   await getInstalledVersion(binPath);
+
+  if (options.addToPath !== false) {
+    core.addPath(cachedDir);
+  }
 
   return {
     binPath,
