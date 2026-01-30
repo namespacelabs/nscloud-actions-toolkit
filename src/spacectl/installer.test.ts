@@ -4,7 +4,7 @@ import * as core from "@actions/core";
 import * as io from "@actions/io";
 import * as tc from "@actions/tool-cache";
 
-import { install, SpacectlInstallError } from "./installer";
+import { install, SpacectlInstallError, getDownloadUrl } from "./installer";
 import * as execModule from "./exec";
 import * as versionModule from "./version";
 import * as platformModule from "./platform";
@@ -15,6 +15,29 @@ vi.mock("@actions/tool-cache");
 vi.mock("./exec");
 vi.mock("./version");
 vi.mock("./platform");
+
+describe("getDownloadUrl", () => {
+  it("generates correct URL for linux/amd64", () => {
+    const url = getDownloadUrl("1.2.3", "linux", "amd64");
+    expect(url).toBe(
+      "https://github.com/namespacelabs/space/releases/download/v1.2.3/space_1.2.3_linux_amd64.tar.gz"
+    );
+  });
+
+  it("generates correct URL for darwin/arm64", () => {
+    const url = getDownloadUrl("2.0.0", "darwin", "arm64");
+    expect(url).toBe(
+      "https://github.com/namespacelabs/space/releases/download/v2.0.0/space_2.0.0_darwin_arm64.tar.gz"
+    );
+  });
+
+  it("generates correct URL for windows/amd64", () => {
+    const url = getDownloadUrl("1.0.0", "windows", "amd64");
+    expect(url).toBe(
+      "https://github.com/namespacelabs/space/releases/download/v1.0.0/space_1.0.0_windows_amd64.tar.gz"
+    );
+  });
+});
 
 describe("installer", () => {
   const mockGetPlatform = vi.mocked(platformModule.getPlatform);
@@ -61,7 +84,15 @@ describe("installer", () => {
   describe("install", () => {
     describe("uses system binary", () => {
       it("uses existing binary from PATH when version is empty", async () => {
-        mockWhich.mockResolvedValue("/usr/local/bin/space");
+        const powertoysBin = process.env.NSC_POWERTOYS_DIR
+          ? `${process.env.NSC_POWERTOYS_DIR}/space`
+          : null;
+
+        mockWhich.mockImplementation(async (tool) => {
+          if (powertoysBin && tool === powertoysBin) return powertoysBin;
+          if (tool === "space") return "/usr/local/bin/space";
+          throw new Error("not found");
+        });
         mockExec.mockResolvedValue({
           exitCode: 0,
           stdout: '{"version":"1.2.3"}',
@@ -70,9 +101,10 @@ describe("installer", () => {
 
         const result = await install();
 
-        expect(result.binPath).toBe("/usr/local/bin/space");
+        const expectedBin = powertoysBin ?? "/usr/local/bin/space";
+        expect(result.binPath).toBe(expectedBin);
         expect(result.version).toBe("1.2.3");
-        expect(mockCoreAddPath).toHaveBeenCalledWith("/usr/local/bin");
+        expect(mockCoreAddPath).toHaveBeenCalledWith(path.dirname(expectedBin));
         expect(mockTcDownloadTool).not.toHaveBeenCalled();
       });
 
@@ -205,12 +237,9 @@ describe("installer", () => {
 
         await install({ githubToken: "my-token" });
 
-        expect(mockTcDownloadTool).toHaveBeenCalledWith(
-          expect.any(String),
-          undefined,
-          undefined,
-          { Authorization: "token my-token" }
-        );
+        expect(mockTcDownloadTool).toHaveBeenCalledWith(expect.any(String), undefined, undefined, {
+          Authorization: "token my-token",
+        });
       });
     });
 

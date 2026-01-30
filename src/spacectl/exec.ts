@@ -69,13 +69,7 @@ export async function exec(
     } catch {
       // stdout wasn't valid JSON, use default message
     }
-    throw new SpacectlExecError(
-      errorMessage,
-      exitCode,
-      stdout,
-      stderr,
-      command
-    );
+    throw new SpacectlExecError(errorMessage, exitCode, stdout, stderr, command);
   }
 
   return { exitCode, stdout, stderr };
