@@ -7,6 +7,10 @@ describe("version", () => {
       expect(normalizeVersion("v1.2.3")).toBe("1.2.3");
     });
 
+    it("removes uppercase V prefix", () => {
+      expect(normalizeVersion("V1.2.3")).toBe("1.2.3");
+    });
+
     it("handles version without prefix", () => {
       expect(normalizeVersion("1.2.3")).toBe("1.2.3");
     });

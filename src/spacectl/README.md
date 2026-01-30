@@ -27,14 +27,22 @@ const result = await install({ version: "latest" });
 
 // Install dev version
 const result = await install({ version: "dev" });
+
+// Download only (don't use system binary)
+const result = await install({ useSystemBinary: false });
+
+// Don't add to PATH
+const result = await install({ addToPath: false });
 ```
 
 #### Options
 
-| Option        | Type     | Default                    | Description                                     |
-| ------------- | -------- | -------------------------- | ----------------------------------------------- |
-| `version`     | `string` | `""`                       | Version to install. Empty uses existing/latest. |
-| `githubToken` | `string` | `process.env.GITHUB_TOKEN` | GitHub token for API requests.                  |
+| Option            | Type      | Default                    | Description                                        |
+| ----------------- | --------- | -------------------------- | -------------------------------------------------- |
+| `version`         | `string`  | `""`                       | Version to install. Empty uses existing/latest.    |
+| `githubToken`     | `string`  | `process.env.GITHUB_TOKEN` | GitHub token for API requests.                     |
+| `useSystemBinary` | `boolean` | `true`                     | Check for existing binary before downloading.      |
+| `addToPath`       | `boolean` | `true`                     | Add binary directory to PATH via `core.addPath()`. |
 
 #### Version Behavior
 
@@ -50,25 +58,34 @@ const result = await install({ version: "dev" });
 | `binPath` | `string` | Full path to the spacectl binary |
 | `version` | `string` | Resolved version                 |
 
-### `exec(binPath, args, options?): Promise<ExecResult>`
+### `exec(args, options?): Promise<ExecResult>`
 
 Execute the spacectl binary with JSON output.
 
 ```typescript
 import { install, exec } from "@namespacelabs/actions-toolkit/spacectl";
 
-const { binPath } = await install();
-const result = await exec(binPath, ["cache", "modes"]);
+// After install(), binary is on PATH
+await install();
+const result = await exec(["cache", "modes"]);
 console.log(result.stdout);
+
+// Or specify binary path explicitly
+const { binPath } = await install({ addToPath: false });
+const result = await exec(["cache", "modes"], { binPath });
 ```
 
 Automatically appends `--output=json` and forwards stderr to stdout for GitHub Actions workflow command processing (e.g., `::debug::`).
 
-On non-zero exit code, parses the JSON error message and exits the process.
+On non-zero exit code, throws `SpacectlExecError` with the parsed error message.
 
 #### Options
 
-Accepts all [@actions/exec](https://github.com/actions/toolkit/tree/main/packages/exec) options except `listeners`, `ignoreReturnCode`, and `silent`.
+| Option    | Type     | Default   | Description                    |
+| --------- | -------- | --------- | ------------------------------ |
+| `binPath` | `string` | `"space"` | Path to the spacectl binary.   |
+
+Also accepts all [@actions/exec](https://github.com/actions/toolkit/tree/main/packages/exec) options except `listeners`, `ignoreReturnCode`, and `silent`.
 
 #### Result
 
@@ -80,14 +97,17 @@ Accepts all [@actions/exec](https://github.com/actions/toolkit/tree/main/package
 
 ## Errors
 
-Throws `SpacectlInstallError` on failure with a descriptive `code`:
+### `SpacectlInstallError`
 
-| Code                     | Description                         |
-| ------------------------ | ----------------------------------- |
-| `UNSUPPORTED_PLATFORM`   | Platform/architecture not supported |
-| `RESOLVE_VERSION_FAILED` | Could not resolve version           |
-| `DOWNLOAD_FAILED`        | Failed to download the binary       |
-| `EXEC_FAILED`            | Binary execution failed             |
+Thrown by `install()` on failure with a descriptive `code`:
+
+| Code                     | Description                   |
+| ------------------------ | ----------------------------- |
+| `UNSUPPORTED_PLATFORM`   | Platform not supported        |
+| `UNSUPPORTED_ARCH`       | Architecture not supported    |
+| `RESOLVE_VERSION_FAILED` | Could not resolve version     |
+| `DOWNLOAD_FAILED`        | Failed to download the binary |
+| `EXEC_FAILED`            | Binary execution failed       |
 
 ```typescript
 import { install, SpacectlInstallError } from "@namespacelabs/actions-toolkit/spacectl";
@@ -97,6 +117,31 @@ try {
 } catch (error) {
   if (error instanceof SpacectlInstallError) {
     console.error(`Install failed: ${error.code}`);
+  }
+}
+```
+
+### `SpacectlExecError`
+
+Thrown by `exec()` on non-zero exit code:
+
+| Property   | Type     | Description                        |
+| ---------- | -------- | ---------------------------------- |
+| `exitCode` | `number` | Process exit code                  |
+| `stdout`   | `string` | Standard output                    |
+| `stderr`   | `string` | Standard error                     |
+| `command`  | `string` | Full command that was executed     |
+| `cause`    | `unknown`| Underlying error (if any)          |
+
+```typescript
+import { exec, SpacectlExecError } from "@namespacelabs/actions-toolkit/spacectl";
+import * as core from "@actions/core";
+
+try {
+  await exec(["cache", "mount"]);
+} catch (error) {
+  if (error instanceof SpacectlExecError) {
+    core.setFailed(error.message);
   }
 }
 ```

@@ -25,7 +25,7 @@ export function getArch(): Arch {
     case "x64":
       return "amd64";
     default:
-      return "amd64";
+      throw new Error(`Unsupported architecture: ${arch}`);
   }
 }
 

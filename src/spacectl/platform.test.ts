@@ -42,9 +42,9 @@ describe("platform", () => {
       expect(getArch()).toBe("amd64");
     });
 
-    it("defaults to amd64 for unknown architectures", () => {
+    it("throws for unsupported architectures", () => {
       vi.mocked(os.arch).mockReturnValue("ia32");
-      expect(getArch()).toBe("amd64");
+      expect(() => getArch()).toThrow("Unsupported architecture: ia32");
     });
   });
 

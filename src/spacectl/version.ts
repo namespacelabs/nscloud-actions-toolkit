@@ -5,7 +5,7 @@ const REPO_OWNER = "namespacelabs";
 const REPO_NAME = "space";
 
 export function normalizeVersion(version: string): string {
-  return version.trim().replace(/^v/, "");
+  return version.trim().replace(/^[vV]/, "");
 }
 
 export async function getLatestVersion(token?: string): Promise<string> {
