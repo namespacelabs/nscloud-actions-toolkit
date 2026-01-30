@@ -50,7 +50,8 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "release": "./scripts/release.sh"
   },
   "dependencies": {
     "@actions/core": "^1.11.1",
