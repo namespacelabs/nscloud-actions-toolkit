@@ -17,10 +17,7 @@ permissions:
 
 jobs:
   publish:
-    runs-on:
-      - nscloud-ubuntu-22.04-amd64-4x8-with-cache
-      - nscloud-cache-size-50gb
-      - nscloud-cache-tag-actions-toolkit
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -34,11 +31,6 @@ jobs:
         with:
           node-version: 24
           registry-url: "https://registry.npmjs.org"
-
-      - name: Cache pnpm
-        uses: namespacelabs/nscloud-cache-action@v1
-        with:
-          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
