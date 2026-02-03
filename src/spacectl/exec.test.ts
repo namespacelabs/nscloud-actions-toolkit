@@ -23,7 +23,7 @@ describe("exec", () => {
       return 0;
     });
 
-    const result = await exec(["version"], { binPath: "/path/to/space" });
+    const result = await exec(["version"], { binPath: "/path/to/spacectl" });
 
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toBe('{"version":"1.0.0"}');
@@ -33,10 +33,10 @@ describe("exec", () => {
   it("appends --output=json to args", async () => {
     mockExec.mockResolvedValue(0);
 
-    await exec(["version"], { binPath: "/path/to/space" });
+    await exec(["version"], { binPath: "/path/to/spacectl" });
 
     expect(mockExec).toHaveBeenCalledWith(
-      "/path/to/space",
+      "/path/to/spacectl",
       ["version", "--output=json"],
       expect.any(Object)
     );
@@ -48,7 +48,7 @@ describe("exec", () => {
     await exec(["version"]);
 
     expect(mockExec).toHaveBeenCalledWith(
-      "space",
+      "spacectl",
       ["version", "--output=json"],
       expect.any(Object)
     );
@@ -61,7 +61,7 @@ describe("exec", () => {
       return 0;
     });
 
-    const result = await exec(["version"], { binPath: "/path/to/space" });
+    const result = await exec(["version"], { binPath: "/path/to/spacectl" });
 
     expect(result.exitCode).toBe(0);
     expect(result.stderr).toBe("::debug::Some debug info");
@@ -74,18 +74,18 @@ describe("exec", () => {
       return 1;
     });
 
-    await expect(exec(["cache", "mount"], { binPath: "/path/to/space" })).rejects.toThrow(
+    await expect(exec(["cache", "mount"], { binPath: "/path/to/spacectl" })).rejects.toThrow(
       SpacectlExecError
     );
 
     try {
-      await exec(["cache", "mount"], { binPath: "/path/to/space" });
+      await exec(["cache", "mount"], { binPath: "/path/to/spacectl" });
     } catch (e) {
       expect(e).toBeInstanceOf(SpacectlExecError);
       const error = e as SpacectlExecError;
       expect(error.message).toBe("error");
       expect(error.exitCode).toBe(1);
-      expect(error.command).toBe("/path/to/space cache mount --output=json");
+      expect(error.command).toBe("/path/to/spacectl cache mount --output=json");
     }
   });
 
@@ -94,17 +94,17 @@ describe("exec", () => {
       return 1;
     });
 
-    await expect(exec(["cache", "mount"], { binPath: "/path/to/space" })).rejects.toThrow(
+    await expect(exec(["cache", "mount"], { binPath: "/path/to/spacectl" })).rejects.toThrow(
       SpacectlExecError
     );
 
     try {
-      await exec(["cache", "mount"], { binPath: "/path/to/space" });
+      await exec(["cache", "mount"], { binPath: "/path/to/spacectl" });
     } catch (e) {
       expect(e).toBeInstanceOf(SpacectlExecError);
       const error = e as SpacectlExecError;
       expect(error.message).toBe(
-        "'/path/to/space cache mount --output=json' failed with exit code 1"
+        "'/path/to/spacectl cache mount --output=json' failed with exit code 1"
       );
     }
   });
@@ -112,10 +112,10 @@ describe("exec", () => {
   it("passes cwd option to underlying exec", async () => {
     mockExec.mockResolvedValue(0);
 
-    await exec(["version"], { binPath: "/path/to/space", cwd: "/some/dir" });
+    await exec(["version"], { binPath: "/path/to/spacectl", cwd: "/some/dir" });
 
     expect(mockExec).toHaveBeenCalledWith(
-      "/path/to/space",
+      "/path/to/spacectl",
       ["version", "--output=json"],
       expect.objectContaining({ cwd: "/some/dir" })
     );
@@ -125,10 +125,10 @@ describe("exec", () => {
     mockExec.mockResolvedValue(0);
     const customEnv = { MY_VAR: "value" };
 
-    await exec(["version"], { binPath: "/path/to/space", env: customEnv });
+    await exec(["version"], { binPath: "/path/to/spacectl", env: customEnv });
 
     expect(mockExec).toHaveBeenCalledWith(
-      "/path/to/space",
+      "/path/to/spacectl",
       ["version", "--output=json"],
       expect.objectContaining({ env: customEnv })
     );
@@ -137,10 +137,10 @@ describe("exec", () => {
   it("uses silent and ignoreReturnCode options", async () => {
     mockExec.mockResolvedValue(0);
 
-    await exec(["version"], { binPath: "/path/to/space" });
+    await exec(["version"], { binPath: "/path/to/spacectl" });
 
     expect(mockExec).toHaveBeenCalledWith(
-      "/path/to/space",
+      "/path/to/spacectl",
       ["version", "--output=json"],
       expect.objectContaining({
         silent: true,
