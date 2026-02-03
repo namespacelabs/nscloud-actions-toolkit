@@ -11,5 +11,4 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   platform: "node",
-  external: [/^@actions\//],
 });
