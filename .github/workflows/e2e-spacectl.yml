@@ -41,32 +41,28 @@ jobs:
 
       - name: Pre-install spacectl to simulate existing binary
         run: |
-          node -e "
-            const { install } = require('./dist/spacectl.cjs');
-            (async () => {
-              const result = await install({ version: '0.5.0' });
-              console.log('Pre-installed spacectl', result.version, 'at', result.binPath);
-            })();
+          node --input-type=module -e "
+            import { install } from './dist/spacectl.mjs';
+            const result = await install({ version: '0.5.0' });
+            console.log('Pre-installed spacectl', result.version, 'at', result.binPath);
           "
 
       - name: Test install (use existing)
         run: |
-          node -e "
-            const { install, exec } = require('./dist/spacectl.cjs');
-            (async () => {
-              const result = await install();
-              console.log('binPath:', result.binPath);
-              console.log('version:', result.version);
-              console.log('downloaded:', result.downloaded);
-              if (result.version !== '0.5.0') {
-                throw new Error('Expected to use existing binary with version 0.5.0, got ' + result.version);
-              }
-              if (result.downloaded !== false) {
-                throw new Error('Expected downloaded to be false for existing binary');
-              }
-              const execResult = await exec(['version']);
-              console.log('exec output:', execResult.stdout);
-            })();
+          node --input-type=module -e "
+            import { install, exec } from './dist/spacectl.mjs';
+            const result = await install();
+            console.log('binPath:', result.binPath);
+            console.log('version:', result.version);
+            console.log('downloaded:', result.downloaded);
+            if (result.version !== '0.5.0') {
+              throw new Error('Expected to use existing binary with version 0.5.0, got ' + result.version);
+            }
+            if (result.downloaded !== false) {
+              throw new Error('Expected downloaded to be false for existing binary');
+            }
+            const execResult = await exec(['version']);
+            console.log('exec output:', execResult.stdout);
           "
 
   # Test installing a specific version
@@ -116,22 +112,20 @@ jobs:
 
       - name: Test install (specific version)
         run: |
-          node -e "
-            const { install, exec } = require('./dist/spacectl.cjs');
-            (async () => {
-              const result = await install({ version: '0.5.0' });
-              console.log('binPath:', result.binPath);
-              console.log('version:', result.version);
-              console.log('downloaded:', result.downloaded);
-              if (result.version !== '0.5.0') {
-                throw new Error('Expected version 0.5.0, got ' + result.version);
-              }
-              if (result.downloaded !== true) {
-                throw new Error('Expected downloaded to be true for fresh install');
-              }
-              const execResult = await exec(['version'], { binPath: result.binPath });
-              console.log('exec output:', execResult.stdout);
-            })();
+          node --input-type=module -e "
+            import { install, exec } from './dist/spacectl.mjs';
+            const result = await install({ version: '0.5.0' });
+            console.log('binPath:', result.binPath);
+            console.log('version:', result.version);
+            console.log('downloaded:', result.downloaded);
+            if (result.version !== '0.5.0') {
+              throw new Error('Expected version 0.5.0, got ' + result.version);
+            }
+            if (result.downloaded !== true) {
+              throw new Error('Expected downloaded to be true for fresh install');
+            }
+            const execResult = await exec(['version'], { binPath: result.binPath });
+            console.log('exec output:', execResult.stdout);
           "
 
   # Test installing latest version
@@ -179,22 +173,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           EXPECTED_VERSION: ${{ steps.latest.outputs.version }}
         run: |
-          node -e "
-            const { install, exec } = require('./dist/spacectl.cjs');
-            (async () => {
-              const expected = process.env.EXPECTED_VERSION;
-              const result = await install({ version: 'latest' });
-              console.log('binPath:', result.binPath);
-              console.log('version:', result.version);
-              console.log('downloaded:', result.downloaded);
-              console.log('expected:', expected);
-              if (result.version !== expected) {
-                throw new Error('Expected version ' + expected + ', got ' + result.version);
-              }
-              if (result.downloaded !== true) {
-                throw new Error('Expected downloaded to be true for fresh install');
-              }
-              const execResult = await exec(['version'], { binPath: result.binPath });
-              console.log('exec output:', execResult.stdout);
-            })();
+          node --input-type=module -e "
+            import { install, exec } from './dist/spacectl.mjs';
+            const expected = process.env.EXPECTED_VERSION;
+            const result = await install({ version: 'latest' });
+            console.log('binPath:', result.binPath);
+            console.log('version:', result.version);
+            console.log('downloaded:', result.downloaded);
+            console.log('expected:', expected);
+            if (result.version !== expected) {
+              throw new Error('Expected version ' + expected + ', got ' + result.version);
+            }
+            if (result.downloaded !== true) {
+              throw new Error('Expected downloaded to be true for fresh install');
+            }
+            const execResult = await exec(['version'], { binPath: result.binPath });
+            console.log('exec output:', execResult.stdout);
           "
