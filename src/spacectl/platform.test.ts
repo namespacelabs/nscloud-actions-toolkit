@@ -29,17 +29,17 @@ describe("platform", () => {
   describe("getBinaryName", () => {
     it("returns a valid binary name for the current platform", () => {
       const binaryName = getBinaryName();
-      expect(["space", "space.exe"]).toContain(binaryName);
+      expect(["spacectl", "spacectl.exe"]).toContain(binaryName);
     });
 
-    it("returns space.exe only on windows", () => {
+    it("returns spacectl.exe only on windows", () => {
       const platform = getPlatform();
       const binaryName = getBinaryName();
 
       if (platform === "windows") {
-        expect(binaryName).toBe("space.exe");
+        expect(binaryName).toBe("spacectl.exe");
       } else {
-        expect(binaryName).toBe("space");
+        expect(binaryName).toBe("spacectl");
       }
     });
   });

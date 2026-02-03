@@ -1,6 +1,6 @@
 # spacectl
 
-Install and execute the [spacectl](https://github.com/namespacelabs/space) CLI in GitHub Actions.
+Install and execute the [spacectl](https://github.com/namespacelabs/spacectl) CLI in GitHub Actions.
 
 ## Installation
 
@@ -83,7 +83,7 @@ On non-zero exit code, throws `SpacectlExecError` with the parsed error message.
 
 | Option    | Type     | Default   | Description                    |
 | --------- | -------- | --------- | ------------------------------ |
-| `binPath` | `string` | `"space"` | Path to the spacectl binary.   |
+| `binPath` | `string` | `"spacectl"` | Path to the spacectl binary.   |
 
 Also accepts all [@actions/exec](https://github.com/actions/toolkit/tree/main/packages/exec) options except `listeners`, `ignoreReturnCode`, and `silent`.
 

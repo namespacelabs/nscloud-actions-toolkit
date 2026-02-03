@@ -42,7 +42,5 @@ pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test:ru
 
 ## Notes
 
-- The binary is currently named `space` (releases at `namespacelabs/space`), but will be renamed to `spacectl`
-- Folder structure uses `spacectl` in anticipation of the rename
 - Uses pnpm as package manager
 - Dual ESM/CJS build with tsdown

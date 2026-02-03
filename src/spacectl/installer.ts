@@ -7,9 +7,9 @@ import { exec } from "./exec";
 import { getPlatform, getArch, getBinaryName, type Platform, type Arch } from "./platform";
 import { resolveVersion, normalizeVersion } from "./version";
 
-const TOOL_NAME = "space";
+const TOOL_NAME = "spacectl";
 const REPO_OWNER = "namespacelabs";
-const REPO_NAME = "space";
+const REPO_NAME = "spacectl";
 
 export interface InstallOptions {
   version?: string;

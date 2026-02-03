@@ -20,21 +20,21 @@ describe("getDownloadUrl", () => {
   it("generates correct URL for linux/amd64", () => {
     const url = getDownloadUrl("1.2.3", "linux", "amd64");
     expect(url).toBe(
-      "https://github.com/namespacelabs/space/releases/download/v1.2.3/space_1.2.3_linux_amd64.tar.gz"
+      "https://github.com/namespacelabs/spacectl/releases/download/v1.2.3/spacectl_1.2.3_linux_amd64.tar.gz"
     );
   });
 
   it("generates correct URL for darwin/arm64", () => {
     const url = getDownloadUrl("2.0.0", "darwin", "arm64");
     expect(url).toBe(
-      "https://github.com/namespacelabs/space/releases/download/v2.0.0/space_2.0.0_darwin_arm64.tar.gz"
+      "https://github.com/namespacelabs/spacectl/releases/download/v2.0.0/spacectl_2.0.0_darwin_arm64.tar.gz"
     );
   });
 
   it("generates correct URL for windows/amd64", () => {
     const url = getDownloadUrl("1.0.0", "windows", "amd64");
     expect(url).toBe(
-      "https://github.com/namespacelabs/space/releases/download/v1.0.0/space_1.0.0_windows_amd64.tar.gz"
+      "https://github.com/namespacelabs/spacectl/releases/download/v1.0.0/spacectl_1.0.0_windows_amd64.tar.gz"
     );
   });
 });
@@ -58,7 +58,7 @@ describe("installer", () => {
 
     mockGetPlatform.mockReturnValue("linux");
     mockGetArch.mockReturnValue("amd64");
-    mockGetBinaryName.mockReturnValue("space");
+    mockGetBinaryName.mockReturnValue("spacectl");
     mockNormalizeVersion.mockImplementation((v) => v.replace(/^v/, ""));
   });
 
@@ -85,12 +85,12 @@ describe("installer", () => {
     describe("uses system binary", () => {
       it("uses existing binary from PATH when version is empty", async () => {
         const powertoysBin = process.env.NSC_POWERTOYS_DIR
-          ? `${process.env.NSC_POWERTOYS_DIR}/space`
+          ? `${process.env.NSC_POWERTOYS_DIR}/spacectl`
           : null;
 
         mockWhich.mockImplementation(async (tool) => {
           if (powertoysBin && tool === powertoysBin) return powertoysBin;
-          if (tool === "space") return "/usr/local/bin/space";
+          if (tool === "spacectl") return "/usr/local/bin/spacectl";
           throw new Error("not found");
         });
         mockExec.mockResolvedValue({
@@ -101,7 +101,7 @@ describe("installer", () => {
 
         const result = await install();
 
-        const expectedBin = powertoysBin ?? "/usr/local/bin/space";
+        const expectedBin = powertoysBin ?? "/usr/local/bin/spacectl";
         expect(result.binPath).toBe(expectedBin);
         expect(result.version).toBe("1.2.3");
         expect(mockCoreAddPath).toHaveBeenCalledWith(path.dirname(expectedBin));
@@ -113,7 +113,7 @@ describe("installer", () => {
         process.env.NSC_POWERTOYS_DIR = "/powertoys";
 
         mockWhich.mockImplementation(async (tool) => {
-          if (tool === "/powertoys/space") return "/powertoys/space";
+          if (tool === "/powertoys/spacectl") return "/powertoys/spacectl";
           throw new Error("not found");
         });
         mockExec.mockResolvedValue({
@@ -124,16 +124,16 @@ describe("installer", () => {
 
         const result = await install();
 
-        expect(result.binPath).toBe("/powertoys/space");
+        expect(result.binPath).toBe("/powertoys/spacectl");
         expect(result.version).toBe("2.0.0");
 
         process.env.NSC_POWERTOYS_DIR = originalEnv;
       });
 
       it("skips system binary when useSystemBinary is false", async () => {
-        mockWhich.mockResolvedValue("/usr/local/bin/space");
+        mockWhich.mockResolvedValue("/usr/local/bin/spacectl");
         mockResolveVersion.mockResolvedValue("1.0.0");
-        mockTcFind.mockReturnValue("/cache/space/1.0.0");
+        mockTcFind.mockReturnValue("/cache/spacectl/1.0.0");
         mockExec.mockResolvedValue({
           exitCode: 0,
           stdout: '{"version":"1.0.0"}',
@@ -147,7 +147,7 @@ describe("installer", () => {
       });
 
       it("does not add to PATH when addToPath is false", async () => {
-        mockWhich.mockResolvedValue("/usr/local/bin/space");
+        mockWhich.mockResolvedValue("/usr/local/bin/spacectl");
         mockExec.mockResolvedValue({
           exitCode: 0,
           stdout: '{"version":"1.2.3"}',
@@ -164,7 +164,7 @@ describe("installer", () => {
       it("uses cached version when available", async () => {
         mockWhich.mockRejectedValue(new Error("not found"));
         mockResolveVersion.mockResolvedValue("1.5.0");
-        mockTcFind.mockReturnValue("/cache/space/1.5.0");
+        mockTcFind.mockReturnValue("/cache/spacectl/1.5.0");
         mockExec.mockResolvedValue({
           exitCode: 0,
           stdout: '{"version":"1.5.0"}',
@@ -173,15 +173,15 @@ describe("installer", () => {
 
         const result = await install();
 
-        expect(result.binPath).toBe(path.join("/cache/space/1.5.0", "space"));
+        expect(result.binPath).toBe(path.join("/cache/spacectl/1.5.0", "spacectl"));
         expect(result.version).toBe("1.5.0");
-        expect(mockCoreAddPath).toHaveBeenCalledWith("/cache/space/1.5.0");
+        expect(mockCoreAddPath).toHaveBeenCalledWith("/cache/spacectl/1.5.0");
         expect(mockTcDownloadTool).not.toHaveBeenCalled();
       });
 
       it("uses cached version for specific version request", async () => {
         mockResolveVersion.mockResolvedValue("2.0.0");
-        mockTcFind.mockReturnValue("/cache/space/2.0.0");
+        mockTcFind.mockReturnValue("/cache/spacectl/2.0.0");
         mockExec.mockResolvedValue({
           exitCode: 0,
           stdout: '{"version":"2.0.0"}',
@@ -202,7 +202,7 @@ describe("installer", () => {
         mockTcFind.mockReturnValue("");
         mockTcDownloadTool.mockResolvedValue("/tmp/archive.tar.gz");
         mockTcExtractTar.mockResolvedValue("/tmp/extracted");
-        mockTcCacheDir.mockResolvedValue("/cache/space/3.0.0");
+        mockTcCacheDir.mockResolvedValue("/cache/spacectl/3.0.0");
         mockExec.mockResolvedValue({
           exitCode: 0,
           stdout: '{"version":"3.0.0"}',
@@ -211,15 +211,15 @@ describe("installer", () => {
 
         const result = await install();
 
-        expect(result.binPath).toBe(path.join("/cache/space/3.0.0", "space"));
+        expect(result.binPath).toBe(path.join("/cache/spacectl/3.0.0", "spacectl"));
         expect(result.version).toBe("3.0.0");
         expect(mockTcDownloadTool).toHaveBeenCalledWith(
-          expect.stringContaining("space_3.0.0_linux_amd64.tar.gz"),
+          expect.stringContaining("spacectl_3.0.0_linux_amd64.tar.gz"),
           undefined,
           undefined,
           expect.any(Object)
         );
-        expect(mockCoreAddPath).toHaveBeenCalledWith("/cache/space/3.0.0");
+        expect(mockCoreAddPath).toHaveBeenCalledWith("/cache/spacectl/3.0.0");
       });
 
       it("includes auth header when token provided", async () => {
@@ -228,7 +228,7 @@ describe("installer", () => {
         mockTcFind.mockReturnValue("");
         mockTcDownloadTool.mockResolvedValue("/tmp/archive.tar.gz");
         mockTcExtractTar.mockResolvedValue("/tmp/extracted");
-        mockTcCacheDir.mockResolvedValue("/cache/space/1.0.0");
+        mockTcCacheDir.mockResolvedValue("/cache/spacectl/1.0.0");
         mockExec.mockResolvedValue({
           exitCode: 0,
           stdout: '{"version":"1.0.0"}',
@@ -289,7 +289,7 @@ describe("installer", () => {
       });
 
       it("throws EXEC_FAILED when binary validation fails", async () => {
-        mockWhich.mockResolvedValue("/usr/local/bin/space");
+        mockWhich.mockResolvedValue("/usr/local/bin/spacectl");
         mockExec.mockResolvedValue({
           exitCode: 0,
           stdout: "not valid json",

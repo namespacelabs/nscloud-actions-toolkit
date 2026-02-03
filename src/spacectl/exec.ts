@@ -34,7 +34,7 @@ export async function exec(
   args: string[],
   options?: ExecOptions & { binPath?: string }
 ): Promise<ExecResult> {
-  const binPath = options?.binPath ?? "space"; // install() should have added to path by default
+  const binPath = options?.binPath ?? "spacectl"; // install() should have added to path by default
   const execArgs = [...args, "--output=json"];
 
   let stdout = "";
@@ -51,7 +51,7 @@ export async function exec(
       stderr: (data: Buffer) => {
         stderr += data.toString();
         // Forward stderr to stdout so GitHub Actions can process workflow
-        // commands like ::debug::. The space binary outputs these to stderr
+        // commands like ::debug::. The spacectl binary outputs these to stderr
         // when --output=json is used to keep stdout clean for JSON.
         process.stdout.write(data);
       },

@@ -12,7 +12,7 @@ pnpm add @namespacelabs/actions-toolkit
 
 ### spacectl
 
-Install and execute the [spacectl](https://github.com/namespacelabs/space) CLI.
+Install and execute the [spacectl](https://github.com/namespacelabs/spacectl) CLI.
 
 ```typescript
 import { install, exec } from "@namespacelabs/actions-toolkit/spacectl";
@@ -34,5 +34,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 ## Links
 
 - [Namespace](https://namespace.so)
-- [spacectl CLI](https://github.com/namespacelabs/space)
+- [spacectl CLI](https://github.com/namespacelabs/spacectl)
 - [Documentation](https://namespace.so/docs)

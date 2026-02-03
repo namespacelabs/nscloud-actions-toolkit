@@ -2,7 +2,7 @@ import * as core from "@actions/core";
 import * as github from "@actions/github";
 
 const REPO_OWNER = "namespacelabs";
-const REPO_NAME = "space";
+const REPO_NAME = "spacectl";
 
 export function normalizeVersion(version: string): string {
   return version.trim().replace(/^[vV]/, "");

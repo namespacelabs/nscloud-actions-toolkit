@@ -30,5 +30,5 @@ export function getArch(): Arch {
 }
 
 export function getBinaryName(): string {
-  return getPlatform() === "windows" ? "space.exe" : "space";
+  return getPlatform() === "windows" ? "spacectl.exe" : "spacectl";
 }
