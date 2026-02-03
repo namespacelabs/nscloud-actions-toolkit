@@ -104,6 +104,7 @@ describe("installer", () => {
         const expectedBin = powertoysBin ?? "/usr/local/bin/spacectl";
         expect(result.binPath).toBe(expectedBin);
         expect(result.version).toBe("1.2.3");
+        expect(result.downloaded).toBe(false);
         expect(mockCoreAddPath).toHaveBeenCalledWith(path.dirname(expectedBin));
         expect(mockTcDownloadTool).not.toHaveBeenCalled();
       });
@@ -126,6 +127,7 @@ describe("installer", () => {
 
         expect(result.binPath).toBe("/powertoys/spacectl");
         expect(result.version).toBe("2.0.0");
+        expect(result.downloaded).toBe(false);
 
         process.env.NSC_POWERTOYS_DIR = originalEnv;
       });
@@ -175,6 +177,7 @@ describe("installer", () => {
 
         expect(result.binPath).toBe(path.join("/cache/spacectl/1.5.0", "spacectl"));
         expect(result.version).toBe("1.5.0");
+        expect(result.downloaded).toBe(false);
         expect(mockCoreAddPath).toHaveBeenCalledWith("/cache/spacectl/1.5.0");
         expect(mockTcDownloadTool).not.toHaveBeenCalled();
       });
@@ -191,6 +194,7 @@ describe("installer", () => {
         const result = await install({ version: "2.0.0" });
 
         expect(result.version).toBe("2.0.0");
+        expect(result.downloaded).toBe(false);
         expect(mockTcDownloadTool).not.toHaveBeenCalled();
       });
     });
@@ -213,6 +217,7 @@ describe("installer", () => {
 
         expect(result.binPath).toBe(path.join("/cache/spacectl/3.0.0", "spacectl"));
         expect(result.version).toBe("3.0.0");
+        expect(result.downloaded).toBe(true);
         expect(mockTcDownloadTool).toHaveBeenCalledWith(
           expect.stringContaining("spacectl_3.0.0_linux_amd64.tar.gz"),
           undefined,

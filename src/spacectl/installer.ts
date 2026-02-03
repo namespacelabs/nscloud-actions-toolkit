@@ -23,6 +23,8 @@ export interface InstallOptions {
 export interface InstallResult {
   binPath: string;
   version: string;
+  /** Whether the binary was downloaded (false if using existing/cached binary) */
+  downloaded: boolean;
 }
 
 export type SpacectlInstallErrorCode =
@@ -156,6 +158,7 @@ export async function install(options: InstallOptions = {}): Promise<InstallResu
       return {
         binPath: existingPath,
         version,
+        downloaded: false,
       };
     }
     core.info("No existing spacectl found, downloading latest version");
@@ -185,6 +188,7 @@ export async function install(options: InstallOptions = {}): Promise<InstallResu
     return {
       binPath,
       version: targetVersion,
+      downloaded: false,
     };
   }
 
@@ -200,5 +204,6 @@ export async function install(options: InstallOptions = {}): Promise<InstallResu
   return {
     binPath,
     version: targetVersion,
+    downloaded: true,
   };
 }
