@@ -176,6 +176,7 @@ jobs:
 
       - name: Test install (latest)
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           EXPECTED_VERSION: ${{ steps.latest.outputs.version }}
         run: |
           node -e "
