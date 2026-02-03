@@ -42,7 +42,7 @@ jobs:
       - name: Pre-install spacectl to simulate existing binary
         run: |
           node -e "
-            const { install } = require('./dist/spacectl/index.cjs');
+            const { install } = require('./dist/spacectl.cjs');
             (async () => {
               const result = await install({ version: '0.5.0' });
               console.log('Pre-installed spacectl', result.version, 'at', result.binPath);
@@ -52,7 +52,7 @@ jobs:
       - name: Test install (use existing)
         run: |
           node -e "
-            const { install, exec } = require('./dist/spacectl/index.cjs');
+            const { install, exec } = require('./dist/spacectl.cjs');
             (async () => {
               const result = await install();
               console.log('binPath:', result.binPath);
@@ -117,7 +117,7 @@ jobs:
       - name: Test install (specific version)
         run: |
           node -e "
-            const { install, exec } = require('./dist/spacectl/index.cjs');
+            const { install, exec } = require('./dist/spacectl.cjs');
             (async () => {
               const result = await install({ version: '0.5.0' });
               console.log('binPath:', result.binPath);
@@ -179,7 +179,7 @@ jobs:
           EXPECTED_VERSION: ${{ steps.latest.outputs.version }}
         run: |
           node -e "
-            const { install, exec } = require('./dist/spacectl/index.cjs');
+            const { install, exec } = require('./dist/spacectl.cjs');
             (async () => {
               const expected = process.env.EXPECTED_VERSION;
               const result = await install({ version: 'latest' });
