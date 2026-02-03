@@ -15,29 +15,16 @@
   "files": [
     "dist"
   ],
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.cts",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": {
-      "import": {
-        "types": "./dist/index.d.mts",
-        "default": "./dist/index.mjs"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
     },
     "./spacectl": {
-      "import": {
-        "types": "./dist/spacectl.d.mts",
-        "default": "./dist/spacectl.mjs"
-      },
-      "require": {
-        "types": "./dist/spacectl.d.cts",
-        "default": "./dist/spacectl.cjs"
-      }
+      "types": "./dist/spacectl.d.mts",
+      "import": "./dist/spacectl.mjs"
     },
     "./package.json": "./package.json"
   },

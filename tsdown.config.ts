@@ -6,10 +6,9 @@ export default defineConfig({
     spacectl: "src/spacectl/index.ts",
   },
   outDir: "dist",
-  format: ["esm", "cjs"],
+  format: ["esm"],
   dts: true,
   sourcemap: true,
   clean: true,
   platform: "node",
-  external: [/^@actions\//],
 });
