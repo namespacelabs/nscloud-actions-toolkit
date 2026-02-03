@@ -1,0 +1,187 @@
+name: E2E
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: ["*"]
+  workflow_dispatch:
+
+jobs:
+  # Test that install() finds and uses an existing binary on PATH
+  existing-binary:
+    name: Existing binary
+    runs-on:
+      - nscloud-ubuntu-22.04-amd64-4x8-with-cache
+      - nscloud-cache-size-50gb
+      - nscloud-cache-tag-actions-toolkit
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Cache pnpm
+        uses: namespacelabs/nscloud-cache-action@v1
+        with:
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Pre-install spacectl to simulate existing binary
+        run: |
+          node -e "
+            const { install } = require('./dist/spacectl/index.cjs');
+            (async () => {
+              const result = await install({ version: '0.5.0' });
+              console.log('Pre-installed spacectl', result.version, 'at', result.binPath);
+            })();
+          "
+
+      - name: Test install (use existing)
+        run: |
+          node -e "
+            const { install, exec } = require('./dist/spacectl/index.cjs');
+            (async () => {
+              const result = await install();
+              console.log('binPath:', result.binPath);
+              console.log('version:', result.version);
+              if (result.version !== '0.5.0') {
+                throw new Error('Expected to use existing binary with version 0.5.0, got ' + result.version);
+              }
+              const execResult = await exec(['version']);
+              console.log('exec output:', execResult.stdout);
+            })();
+          "
+
+  # Test installing a specific version
+  specific-version:
+    name: Specific version
+    runs-on:
+      - nscloud-ubuntu-22.04-amd64-4x8-with-cache
+      - nscloud-cache-size-50gb
+      - nscloud-cache-tag-actions-toolkit
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Cache pnpm
+        uses: namespacelabs/nscloud-cache-action@v1
+        with:
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - &remove-spacectl
+        name: Remove existing spacectl (if any)
+        run: |
+          # Check NSC_POWERTOYS_DIR first (installer priority)
+          if [ -n "$NSC_POWERTOYS_DIR" ] && [ -f "$NSC_POWERTOYS_DIR/spacectl" ]; then
+            echo "Found spacectl in powertoys at $NSC_POWERTOYS_DIR/spacectl, removing..."
+            sudo rm -f "$NSC_POWERTOYS_DIR/spacectl"
+          fi
+          # Check PATH
+          if command -v spacectl &> /dev/null; then
+            echo "Found spacectl on PATH at $(which spacectl), removing..."
+            sudo rm -f "$(which spacectl)"
+          fi
+
+      - name: Test install (specific version)
+        run: |
+          node -e "
+            const { install, exec } = require('./dist/spacectl/index.cjs');
+            (async () => {
+              const result = await install({ version: '0.5.0' });
+              console.log('binPath:', result.binPath);
+              console.log('version:', result.version);
+              if (result.version !== '0.5.0') {
+                throw new Error('Expected version 0.5.0, got ' + result.version);
+              }
+              const execResult = await exec(['version'], { binPath: result.binPath });
+              console.log('exec output:', execResult.stdout);
+            })();
+          "
+
+  # Test installing latest version
+  latest-version:
+    name: Latest version (force download)
+    runs-on:
+      - nscloud-ubuntu-22.04-amd64-4x8-with-cache
+      - nscloud-cache-size-50gb
+      - nscloud-cache-tag-actions-toolkit
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Cache pnpm
+        uses: namespacelabs/nscloud-cache-action@v1
+        with:
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - *remove-spacectl
+
+      - name: Get latest version from GitHub API
+        id: latest
+        run: |
+          LATEST=$(curl -s https://api.github.com/repos/namespacelabs/spacectl/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+          echo "version=$LATEST" >> $GITHUB_OUTPUT
+          echo "Latest version: $LATEST"
+
+      - name: Test install (latest)
+        env:
+          EXPECTED_VERSION: ${{ steps.latest.outputs.version }}
+        run: |
+          node -e "
+            const { install, exec } = require('./dist/spacectl/index.cjs');
+            (async () => {
+              const expected = process.env.EXPECTED_VERSION;
+              const result = await install({ version: 'latest' });
+              console.log('binPath:', result.binPath);
+              console.log('version:', result.version);
+              console.log('expected:', expected);
+              if (result.version !== expected) {
+                throw new Error('Expected version ' + expected + ', got ' + result.version);
+              }
+              const execResult = await exec(['version'], { binPath: result.binPath });
+              console.log('exec output:', execResult.stdout);
+            })();
+          "
