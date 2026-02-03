@@ -57,8 +57,12 @@ jobs:
               const result = await install();
               console.log('binPath:', result.binPath);
               console.log('version:', result.version);
+              console.log('downloaded:', result.downloaded);
               if (result.version !== '0.5.0') {
                 throw new Error('Expected to use existing binary with version 0.5.0, got ' + result.version);
+              }
+              if (result.downloaded !== false) {
+                throw new Error('Expected downloaded to be false for existing binary');
               }
               const execResult = await exec(['version']);
               console.log('exec output:', execResult.stdout);
@@ -118,8 +122,12 @@ jobs:
               const result = await install({ version: '0.5.0' });
               console.log('binPath:', result.binPath);
               console.log('version:', result.version);
+              console.log('downloaded:', result.downloaded);
               if (result.version !== '0.5.0') {
                 throw new Error('Expected version 0.5.0, got ' + result.version);
+              }
+              if (result.downloaded !== true) {
+                throw new Error('Expected downloaded to be true for fresh install');
               }
               const execResult = await exec(['version'], { binPath: result.binPath });
               console.log('exec output:', execResult.stdout);
@@ -177,9 +185,13 @@ jobs:
               const result = await install({ version: 'latest' });
               console.log('binPath:', result.binPath);
               console.log('version:', result.version);
+              console.log('downloaded:', result.downloaded);
               console.log('expected:', expected);
               if (result.version !== expected) {
                 throw new Error('Expected version ' + expected + ', got ' + result.version);
+              }
+              if (result.downloaded !== true) {
+                throw new Error('Expected downloaded to be true for fresh install');
               }
               const execResult = await exec(['version'], { binPath: result.binPath });
               console.log('exec output:', execResult.stdout);
