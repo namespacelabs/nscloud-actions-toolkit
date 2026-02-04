@@ -144,21 +144,18 @@ PR_BODY="## 🚀 Release v${NEW_VERSION}
 
 This PR prepares the release of version ${NEW_VERSION}.
 
-### ✅ Checklist after merging:
+### ✅ After merging, finalize the release:
 
-1. **Create the tag:**
-   \`\`\`bash
-   git checkout main
-   git pull origin main
-   git tag v${NEW_VERSION}
-   git push origin v${NEW_VERSION}
-   \`\`\`
+\`\`\`bash
+pnpm run release:finalize --tag=${NEW_VERSION}
+\`\`\`
 
-2. **Create a GitHub Release:**
-   - Go to [Releases](../../releases/new)
-   - Select tag \`v${NEW_VERSION}\`
-   - Generate release notes
-   - Publish the release
+This will:
+1. Switch to main and pull latest changes
+2. Verify the version matches package.json
+3. Create and push the tag \`v${NEW_VERSION}\`
+4. Wait for the tag to be visible on GitHub
+5. Provide a link to create the GitHub Release
 
 ### 📦 Changes
 - Bumps version from \`${CURRENT_VERSION}\` to \`${NEW_VERSION}\`
@@ -174,8 +171,6 @@ echo -e "${GREEN}🎉 Success! PR created for release v${NEW_VERSION}${NC}"
 echo ""
 echo -e "${GREEN}✨ Done! Next steps:${NC}"
 echo "   1. Review and merge the PR"
-echo "   2. Create and push the tag:"
-echo "      git checkout main && git pull origin main"
-echo "      git tag v${NEW_VERSION} && git push origin v${NEW_VERSION}"
-echo "   3. Create a release through the GitHub UI"
+echo "   2. Finalize the release:"
+echo "      pnpm run release:finalize --tag=${NEW_VERSION}"
 echo ""
