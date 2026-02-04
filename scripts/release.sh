@@ -55,17 +55,41 @@ echo -e "${GREEN}✅ Up to date with origin/main${NC}"
 
 # Get current version
 CURRENT_VERSION=$(node -p "require('./package.json').version")
+
+# Parse current version and suggest next minor
+IFS='.' read -r MAJOR MINOR PATCH <<< "${CURRENT_VERSION%%-*}"
+SUGGESTED_VERSION="${MAJOR}.$((MINOR + 1)).0"
+
 echo ""
 echo -e "${YELLOW}📦 Current version: v${CURRENT_VERSION}${NC}"
 echo ""
 
 # Ask for new version
-read -p "🔢 Enter the new semver version (e.g., 0.2.0): " NEW_VERSION
+read -p "🔢 Enter the new semver version (e.g., ${SUGGESTED_VERSION}): " NEW_VERSION
 
 # Validate semver format
 if ! [[ "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
   echo -e "${RED}❌ Error: Invalid semver format.${NC}"
   echo "   Expected format: MAJOR.MINOR.PATCH (e.g., 1.0.0, 0.2.0-beta.1)"
+  exit 1
+fi
+
+# Check that new version is greater than current version
+version_gt() {
+  local v1="${1%%-*}" v2="${2%%-*}"
+  IFS='.' read -r v1_major v1_minor v1_patch <<< "$v1"
+  IFS='.' read -r v2_major v2_minor v2_patch <<< "$v2"
+  
+  if (( v1_major > v2_major )); then return 0; fi
+  if (( v1_major < v2_major )); then return 1; fi
+  if (( v1_minor > v2_minor )); then return 0; fi
+  if (( v1_minor < v2_minor )); then return 1; fi
+  if (( v1_patch > v2_patch )); then return 0; fi
+  return 1
+}
+
+if ! version_gt "$NEW_VERSION" "$CURRENT_VERSION"; then
+  echo -e "${RED}❌ Error: New version (${NEW_VERSION}) must be greater than current version (${CURRENT_VERSION}).${NC}"
   exit 1
 fi
 
