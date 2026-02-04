@@ -39,10 +39,32 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      - name: Test install (use existing)
+      - name: Verify NSC_POWERTOYS_DIR is set
+        run: |
+          if [ -z "$NSC_POWERTOYS_DIR" ]; then
+            echo "::error::NSC_POWERTOYS_DIR is not set - this test must run on a Namespace runner"
+            exit 1
+          fi
+          echo "NSC_POWERTOYS_DIR=$NSC_POWERTOYS_DIR"
+          ls -la "$NSC_POWERTOYS_DIR"
+
+      - name: Remove spacectl from PATH if present
+        run: |
+          if command -v spacectl &> /dev/null; then
+            SPACECTL_PATH=$(which spacectl)
+            echo "Removing spacectl from PATH: $SPACECTL_PATH"
+            sudo rm -f "$SPACECTL_PATH"
+          fi
+          if command -v spacectl &> /dev/null; then
+            echo "::error::Failed to remove spacectl from PATH"
+            exit 1
+          fi
+
+      - name: Test install (use existing from powertoys)
         run: |
           node --input-type=module -e "
             import { install, exec } from './dist/spacectl.mjs';
+            const powertoysDir = process.env.NSC_POWERTOYS_DIR;
             const result = await install();
             console.log('binPath:', result.binPath);
             console.log('version:', result.version);
@@ -52,6 +74,9 @@ jobs:
             }
             if (result.downloaded !== false) {
               throw new Error('Expected downloaded to be false for existing binary');
+            }
+            if (!result.binPath.startsWith(powertoysDir)) {
+              throw new Error('Expected binPath to be in NSC_POWERTOYS_DIR, got ' + result.binPath);
             }
             const execResult = await exec(['version']);
             console.log('exec output:', execResult.stdout);
