@@ -48,6 +48,12 @@ jobs:
           echo "NSC_POWERTOYS_DIR=$NSC_POWERTOYS_DIR"
           ls -la "$NSC_POWERTOYS_DIR"
 
+      - name: Breakpoint if tests failed
+        uses: namespacelabs/breakpoint-action@v0
+        with:
+          duration: 30m
+          authorized-users: rcrowe
+
       - name: Remove spacectl from PATH if present
         run: |
           if command -v spacectl &> /dev/null; then
