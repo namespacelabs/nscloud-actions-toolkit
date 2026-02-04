@@ -53,10 +53,11 @@ const result = await install({ addToPath: false });
 
 #### Result
 
-| Property  | Type     | Description                      |
-| --------- | -------- | -------------------------------- |
-| `binPath` | `string` | Full path to the spacectl binary |
-| `version` | `string` | Resolved version                 |
+| Property     | Type      | Description                                            |
+| ------------ | --------- | ------------------------------------------------------ |
+| `binPath`    | `string`  | Full path to the spacectl binary                       |
+| `version`    | `string`  | Resolved version                                       |
+| `downloaded` | `boolean` | Whether the binary was downloaded (false if cached)    |
 
 ### `exec(args, options?): Promise<ExecResult>`
 

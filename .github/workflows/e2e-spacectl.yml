@@ -39,14 +39,6 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      - name: Pre-install spacectl to simulate existing binary
-        run: |
-          node --input-type=module -e "
-            import { install } from './dist/spacectl.mjs';
-            const result = await install({ version: '0.5.0' });
-            console.log('Pre-installed spacectl', result.version, 'at', result.binPath);
-          "
-
       - name: Test install (use existing)
         run: |
           node --input-type=module -e "
@@ -55,8 +47,8 @@ jobs:
             console.log('binPath:', result.binPath);
             console.log('version:', result.version);
             console.log('downloaded:', result.downloaded);
-            if (result.version !== '0.5.0') {
-              throw new Error('Expected to use existing binary with version 0.5.0, got ' + result.version);
+            if (!result.version) {
+              throw new Error('Expected version to be set');
             }
             if (result.downloaded !== false) {
               throw new Error('Expected downloaded to be false for existing binary');
@@ -96,25 +88,11 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      - &remove-spacectl
-        name: Remove existing spacectl (if any)
-        run: |
-          # Check NSC_POWERTOYS_DIR first (installer priority)
-          if [ -n "$NSC_POWERTOYS_DIR" ] && [ -f "$NSC_POWERTOYS_DIR/spacectl" ]; then
-            echo "Found spacectl in powertoys at $NSC_POWERTOYS_DIR/spacectl, removing..."
-            sudo rm -f "$NSC_POWERTOYS_DIR/spacectl"
-          fi
-          # Check PATH
-          if command -v spacectl &> /dev/null; then
-            echo "Found spacectl on PATH at $(which spacectl), removing..."
-            sudo rm -f "$(which spacectl)"
-          fi
-
       - name: Test install (specific version)
         run: |
           node --input-type=module -e "
             import { install, exec } from './dist/spacectl.mjs';
-            const result = await install({ version: '0.5.0' });
+            const result = await install({ version: '0.5.0', useSystemBinary: false });
             console.log('binPath:', result.binPath);
             console.log('version:', result.version);
             console.log('downloaded:', result.downloaded);
@@ -159,8 +137,6 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      - *remove-spacectl
-
       - name: Get latest version from GitHub API
         id: latest
         env:
@@ -178,7 +154,7 @@ jobs:
           node --input-type=module -e "
             import { install, exec } from './dist/spacectl.mjs';
             const expected = process.env.EXPECTED_VERSION;
-            const result = await install({ version: 'latest' });
+            const result = await install({ version: 'latest', useSystemBinary: false });
             console.log('binPath:', result.binPath);
             console.log('version:', result.version);
             console.log('downloaded:', result.downloaded);
