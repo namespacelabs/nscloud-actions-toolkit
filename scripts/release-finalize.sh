@@ -85,7 +85,7 @@ echo -e "${YELLOW}⚠️  This will:${NC}"
 echo "   1. Create tag v${VERSION}"
 echo "   2. Push the tag to origin"
 echo "   3. Wait for the tag to be visible on GitHub"
-echo "   4. Provide instructions to create the GitHub Release"
+echo "   4. Create the GitHub Release with auto-generated notes"
 echo ""
 
 read -p "🤔 Do you want to continue? (y/N): " CONFIRM
@@ -140,16 +140,11 @@ if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
   echo "   You can check manually at: https://github.com/namespacelabs/nscloud-actions-toolkit/tags"
 fi
 
-# Get repository URL for release page
-REPO_URL=$(gh repo view --json url -q '.url')
+# Create GitHub Release
+echo -e "${BLUE}📦 Creating GitHub Release...${NC}"
+gh release create "v${VERSION}" --generate-notes
+echo -e "${GREEN}✅ GitHub Release created${NC}"
 
 echo ""
 echo -e "${GREEN}🎉 Release v${VERSION} finalized!${NC}"
-echo ""
-echo -e "${GREEN}✨ Next step:${NC}"
-echo "   Create a GitHub Release:"
-echo "   ${REPO_URL}/releases/new?tag=v${VERSION}"
-echo ""
-echo -e "${BLUE}💡 Tip: You can also run:${NC}"
-echo "   gh release create v${VERSION} --generate-notes"
 echo ""
