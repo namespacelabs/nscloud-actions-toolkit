@@ -38,7 +38,8 @@
     "format:check": "prettier --check \"src/**/*.ts\"",
     "test": "vitest",
     "test:run": "vitest run",
-    "release": "./scripts/release.sh"
+    "release": "./scripts/release.sh",
+    "release:finalize": "./scripts/release-finalize.sh"
   },
   "dependencies": {
     "@actions/core": "^3.0.0",

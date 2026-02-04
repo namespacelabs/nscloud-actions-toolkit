@@ -19,6 +19,14 @@ pnpm run release
 
 The script will guide you through the process interactively.
 
+After the PR is merged, finalize the release:
+
+```bash
+pnpm run release:finalize --tag=X.Y.Z
+```
+
+This will create and push the tag, then provide a link to create the GitHub release.
+
 ## Manual Release Process
 
 If you prefer to release manually, follow these steps:
@@ -72,7 +80,15 @@ Or create it manually via the GitHub UI.
 
 After review, merge the PR into `main`.
 
-### 6. 🏷️ Create and Push Tag
+### 6. 🏁 Finalize the Release
+
+Run the finalize script to create and push the tag:
+
+```bash
+pnpm run release:finalize --tag=X.Y.Z
+```
+
+Or manually:
 
 ```bash
 git checkout main
