@@ -49,6 +49,8 @@ async function findExistingBinary(): Promise<string | undefined> {
   const binaryName = getBinaryName();
 
   const powertoysDir = process.env.NSC_POWERTOYS_DIR;
+  core.debug(`powertoys directory: ${powertoysDir}`);
+
   if (powertoysDir) {
     const powertoysPath = path.join(powertoysDir, binaryName);
     try {
