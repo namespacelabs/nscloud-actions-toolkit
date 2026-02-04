@@ -88,15 +88,10 @@ describe("installer", () => {
   describe("install", () => {
     describe("uses system binary", () => {
       it("uses existing binary from PATH when version is empty", async () => {
-        const powertoysBin = process.env.NSC_POWERTOYS_DIR
-          ? `${process.env.NSC_POWERTOYS_DIR}/spacectl`
-          : null;
+        const originalEnv = process.env.NSC_POWERTOYS_DIR;
+        delete process.env.NSC_POWERTOYS_DIR;
 
-        mockWhich.mockImplementation(async (tool) => {
-          if (powertoysBin && tool === powertoysBin) return powertoysBin;
-          if (tool === "spacectl") return "/usr/local/bin/spacectl";
-          throw new Error("not found");
-        });
+        mockWhich.mockResolvedValue("/usr/local/bin/spacectl");
         mockExec.mockResolvedValue({
           exitCode: 0,
           stdout: '{"version":"1.2.3"}',
@@ -105,12 +100,13 @@ describe("installer", () => {
 
         const result = await install();
 
-        const expectedBin = powertoysBin ?? "/usr/local/bin/spacectl";
-        expect(result.binPath).toBe(expectedBin);
+        expect(result.binPath).toBe("/usr/local/bin/spacectl");
         expect(result.version).toBe("1.2.3");
         expect(result.downloaded).toBe(false);
-        expect(mockCoreAddPath).toHaveBeenCalledWith(path.dirname(expectedBin));
+        expect(mockCoreAddPath).toHaveBeenCalledWith("/usr/local/bin");
         expect(mockTcDownloadTool).not.toHaveBeenCalled();
+
+        process.env.NSC_POWERTOYS_DIR = originalEnv;
       });
 
       it("uses existing binary from NSC_POWERTOYS_DIR", async () => {
