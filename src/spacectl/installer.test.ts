@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as core from "@actions/core";
 import * as io from "@actions/io";
@@ -9,6 +10,7 @@ import * as execModule from "./exec";
 import * as versionModule from "./version";
 import * as platformModule from "./platform";
 
+vi.mock("node:fs/promises");
 vi.mock("@actions/core");
 vi.mock("@actions/io");
 vi.mock("@actions/tool-cache");
@@ -46,6 +48,7 @@ describe("installer", () => {
   const mockResolveVersion = vi.mocked(versionModule.resolveVersion);
   const mockNormalizeVersion = vi.mocked(versionModule.normalizeVersion);
   const mockExec = vi.mocked(execModule.exec);
+  const mockFsAccess = vi.mocked(fs.access);
   const mockWhich = vi.mocked(io.which);
   const mockTcFind = vi.mocked(tc.find);
   const mockTcDownloadTool = vi.mocked(tc.downloadTool);
@@ -60,6 +63,7 @@ describe("installer", () => {
     mockGetArch.mockReturnValue("amd64");
     mockGetBinaryName.mockReturnValue("spacectl");
     mockNormalizeVersion.mockImplementation((v) => v.replace(/^v/, ""));
+    mockFsAccess.mockRejectedValue(new Error("not found"));
   });
 
   afterEach(() => {
@@ -113,10 +117,7 @@ describe("installer", () => {
         const originalEnv = process.env.NSC_POWERTOYS_DIR;
         process.env.NSC_POWERTOYS_DIR = "/powertoys";
 
-        mockWhich.mockImplementation(async (tool) => {
-          if (tool === "/powertoys/spacectl") return "/powertoys/spacectl";
-          throw new Error("not found");
-        });
+        mockFsAccess.mockResolvedValue(undefined);
         mockExec.mockResolvedValue({
           exitCode: 0,
           stdout: '{"version":"2.0.0"}',

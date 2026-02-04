@@ -1,3 +1,4 @@
+import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as core from "@actions/core";
 import * as io from "@actions/io";
@@ -51,7 +52,7 @@ async function findExistingBinary(): Promise<string | undefined> {
   if (powertoysDir) {
     const powertoysPath = path.join(powertoysDir, binaryName);
     try {
-      await io.which(powertoysPath, true);
+      await fs.access(powertoysPath, fs.constants.X_OK);
       core.debug(`Found existing binary in powertoys: ${powertoysPath}`);
       return powertoysPath;
     } catch {
