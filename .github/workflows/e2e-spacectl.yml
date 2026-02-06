@@ -271,3 +271,21 @@ jobs:
             const execResult = await exec(['version'], { binPath: result.binPath });
             console.log('exec output:', execResult.stdout);
           "
+
+  e2e-ok:
+    name: E2E
+    if: always()
+    needs:
+      - require-system-binary
+      - require-system-binary-missing
+      - ignore-system-binary
+      - specific-version
+      - latest-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check result
+        run: |
+          if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "true" ]; then
+            echo "::error::One or more E2E jobs failed or were cancelled"
+            exit 1
+          fi
