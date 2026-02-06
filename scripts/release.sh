@@ -161,7 +161,7 @@ This will:
 - Bumps version from \`${CURRENT_VERSION}\` to \`${NEW_VERSION}\`
 "
 gh pr create \
-  --title "🚀 Release v${NEW_VERSION}" \
+  --title "chore: bump version to v${NEW_VERSION}" \
   --body "$PR_BODY" \
   --base main
 
