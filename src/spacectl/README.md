@@ -29,7 +29,10 @@ const result = await install({ version: "latest" });
 const result = await install({ version: "dev" });
 
 // Download only (don't use system binary)
-const result = await install({ useSystemBinary: false });
+const result = await install({ systemBinary: "ignore" });
+
+// Require system binary (error if not found)
+const result = await install({ systemBinary: "require" });
 
 // Don't add to PATH
 const result = await install({ addToPath: false });
@@ -41,12 +44,12 @@ const result = await install({ addToPath: false });
 | ----------------- | --------- | -------------------------- | -------------------------------------------------- |
 | `version`         | `string`  | `""`                       | Version to install. Empty uses existing/latest.    |
 | `githubToken`     | `string`  | `process.env.GITHUB_TOKEN` | GitHub token for API requests.                     |
-| `useSystemBinary` | `boolean` | `true`                     | Check for existing binary before downloading.      |
+| `systemBinary`    | `string`  | `"prefer"`                 | System binary resolution: `"prefer"` (use system binary when no version specified), `"require"` (always use system binary or error), or `"ignore"` (always download). |
 | `addToPath`       | `boolean` | `true`                     | Add binary directory to PATH via `core.addPath()`. |
 
 #### Version Behavior
 
-- `""` (empty): Use existing installation if available, otherwise download latest
+- `""` (empty): Use existing installation if available (unless `systemBinary` is `"ignore"`), otherwise download latest
 - `"latest"`: Always resolve and download the latest stable version
 - `"dev"`: Download the latest dev version
 - `"X.Y.Z"`: Download a specific version
@@ -106,6 +109,7 @@ Thrown by `install()` on failure with a descriptive `code`:
 | ------------------------ | ----------------------------- |
 | `UNSUPPORTED_PLATFORM`   | Platform not supported        |
 | `UNSUPPORTED_ARCH`       | Architecture not supported    |
+| `SYSTEM_BINARY_NOT_FOUND` | No system binary found (when `systemBinary` is `"require"`) |
 | `RESOLVE_VERSION_FAILED` | Could not resolve version     |
 | `DOWNLOAD_FAILED`        | Failed to download the binary |
 | `EXEC_FAILED`            | Binary execution failed       |

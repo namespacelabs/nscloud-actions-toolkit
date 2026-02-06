@@ -129,7 +129,7 @@ describe("installer", () => {
         process.env.NSC_POWERTOYS_DIR = originalEnv;
       });
 
-      it("skips system binary when useSystemBinary is false", async () => {
+      it("skips system binary when systemBinary is ignore", async () => {
         mockWhich.mockResolvedValue("/usr/local/bin/spacectl");
         mockResolveVersion.mockResolvedValue("1.0.0");
         mockTcFind.mockReturnValue("/cache/spacectl/1.0.0");
@@ -139,10 +139,66 @@ describe("installer", () => {
           stderr: "",
         });
 
-        const result = await install({ useSystemBinary: false });
+        const result = await install({ systemBinary: "ignore" });
 
         expect(mockWhich).not.toHaveBeenCalled();
         expect(result.version).toBe("1.0.0");
+      });
+
+      it("throws SYSTEM_BINARY_NOT_FOUND when systemBinary is require and no binary exists", async () => {
+        const originalEnv = process.env.NSC_POWERTOYS_DIR;
+        delete process.env.NSC_POWERTOYS_DIR;
+
+        mockWhich.mockRejectedValue(new Error("not found"));
+
+        await expect(install({ systemBinary: "require" })).rejects.toThrow(SpacectlInstallError);
+        await expect(install({ systemBinary: "require" })).rejects.toMatchObject({
+          code: "SYSTEM_BINARY_NOT_FOUND",
+        });
+
+        process.env.NSC_POWERTOYS_DIR = originalEnv;
+      });
+
+      it("uses existing binary when systemBinary is require and binary exists", async () => {
+        const originalEnv = process.env.NSC_POWERTOYS_DIR;
+        delete process.env.NSC_POWERTOYS_DIR;
+
+        mockWhich.mockResolvedValue("/usr/local/bin/spacectl");
+        mockExec.mockResolvedValue({
+          exitCode: 0,
+          stdout: '{"version":"1.2.3"}',
+          stderr: "",
+        });
+
+        const result = await install({ systemBinary: "require" });
+
+        expect(result.binPath).toBe("/usr/local/bin/spacectl");
+        expect(result.version).toBe("1.2.3");
+        expect(result.downloaded).toBe(false);
+        expect(mockTcDownloadTool).not.toHaveBeenCalled();
+
+        process.env.NSC_POWERTOYS_DIR = originalEnv;
+      });
+
+      it("uses existing binary when systemBinary is require even with version specified", async () => {
+        const originalEnv = process.env.NSC_POWERTOYS_DIR;
+        delete process.env.NSC_POWERTOYS_DIR;
+
+        mockWhich.mockResolvedValue("/usr/local/bin/spacectl");
+        mockExec.mockResolvedValue({
+          exitCode: 0,
+          stdout: '{"version":"1.2.3"}',
+          stderr: "",
+        });
+
+        const result = await install({ version: "1.2.3", systemBinary: "require" });
+
+        expect(result.binPath).toBe("/usr/local/bin/spacectl");
+        expect(result.version).toBe("1.2.3");
+        expect(result.downloaded).toBe(false);
+        expect(mockTcDownloadTool).not.toHaveBeenCalled();
+
+        process.env.NSC_POWERTOYS_DIR = originalEnv;
       });
 
       it("does not add to PATH when addToPath is false", async () => {

@@ -15,8 +15,8 @@ const REPO_NAME = "spacectl";
 export interface InstallOptions {
   version?: string;
   githubToken?: string;
-  /** Check for existing binary before downloading. @default true */
-  useSystemBinary?: boolean;
+  /** System binary resolution strategy. @default "prefer" */
+  systemBinary?: "prefer" | "require" | "ignore";
   /** Add binary directory to PATH via core.addPath(). @default true */
   addToPath?: boolean;
 }
@@ -31,6 +31,7 @@ export interface InstallResult {
 export type SpacectlInstallErrorCode =
   | "UNSUPPORTED_PLATFORM"
   | "UNSUPPORTED_ARCH"
+  | "SYSTEM_BINARY_NOT_FOUND"
   | "RESOLVE_VERSION_FAILED"
   | "DOWNLOAD_FAILED"
   | "EXEC_FAILED";
@@ -149,8 +150,9 @@ export async function install(options: InstallOptions = {}): Promise<InstallResu
   }
 
   const binaryName = getBinaryName();
+  const systemBinary = options.systemBinary ?? "prefer";
 
-  if (versionSpec === "" && options.useSystemBinary !== false) {
+  if (systemBinary === "require" || (systemBinary === "prefer" && versionSpec === "")) {
     const existingPath = await findExistingBinary();
     if (existingPath) {
       const version = await getInstalledVersion(existingPath);
@@ -163,6 +165,12 @@ export async function install(options: InstallOptions = {}): Promise<InstallResu
         version,
         downloaded: false,
       };
+    }
+    if (systemBinary === "require") {
+      throw new SpacectlInstallError(
+        "No existing spacectl binary found in powertoys or on PATH",
+        "SYSTEM_BINARY_NOT_FOUND"
+      );
     }
     core.info("No existing spacectl found, downloading latest version");
   }

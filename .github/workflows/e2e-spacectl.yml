@@ -8,11 +8,16 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Test that install() finds and uses an existing binary on PATH
-  existing-binary:
-    name: Existing binary
+  # Test systemBinary: "require" uses existing binary
+  require-system-binary:
+    name: Require system binary (${{ matrix.runner }})
+    strategy:
+      matrix:
+        runner:
+          - nscloud-ubuntu-22.04-amd64-4x8-with-cache
+          - nscloud-macos-arm64-with-cache
     runs-on:
-      - nscloud-ubuntu-22.04-amd64-4x8-with-cache
+      - ${{ matrix.runner }}
       - nscloud-cache-size-50gb
       - nscloud-cache-tag-actions-toolkit
 
@@ -45,35 +50,18 @@ jobs:
             echo "::error::NSC_POWERTOYS_DIR is not set - this test must run on a Namespace runner"
             exit 1
           fi
-          echo "NSC_POWERTOYS_DIR=$NSC_POWERTOYS_DIR"
-          ls -la "$NSC_POWERTOYS_DIR"
 
-      - name: Remove spacectl from PATH if present
-        run: |
-          if command -v spacectl &> /dev/null; then
-            SPACECTL_PATH=$(which spacectl)
-            echo "Removing spacectl from PATH: $SPACECTL_PATH"
-            sudo rm -f "$SPACECTL_PATH"
-          fi
-          if command -v spacectl &> /dev/null; then
-            echo "::error::Failed to remove spacectl from PATH"
-            exit 1
-          fi
-
-      - name: Test install (use existing from powertoys)
+      - name: Test install (require system binary)
         run: |
           node --input-type=module -e "
             import { install, exec } from './dist/spacectl.mjs';
             const powertoysDir = process.env.NSC_POWERTOYS_DIR;
-            const result = await install();
+            const result = await install({ systemBinary: 'require' });
             console.log('binPath:', result.binPath);
             console.log('version:', result.version);
             console.log('downloaded:', result.downloaded);
-            if (!result.version) {
-              throw new Error('Expected version to be set');
-            }
             if (result.downloaded !== false) {
-              throw new Error('Expected downloaded to be false for existing binary');
+              throw new Error('Expected downloaded to be false');
             }
             if (!result.binPath.startsWith(powertoysDir)) {
               throw new Error('Expected binPath to be in NSC_POWERTOYS_DIR, got ' + result.binPath);
@@ -82,7 +70,97 @@ jobs:
             console.log('exec output:', execResult.stdout);
           "
 
-  # Test installing a specific version
+  # Test systemBinary: "require" errors when no binary exists
+  require-system-binary-missing:
+    name: Require system binary (missing)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Test install (require system binary fails)
+        run: |
+          node --input-type=module -e "
+            import { install, SpacectlInstallError } from './dist/spacectl.mjs';
+            try {
+              await install({ systemBinary: 'require' });
+              throw new Error('Expected install to throw');
+            } catch (error) {
+              if (!(error instanceof SpacectlInstallError)) {
+                throw new Error('Expected SpacectlInstallError, got ' + error.constructor.name);
+              }
+              if (error.code !== 'SYSTEM_BINARY_NOT_FOUND') {
+                throw new Error('Expected SYSTEM_BINARY_NOT_FOUND, got ' + error.code);
+              }
+              console.log('Correctly threw SYSTEM_BINARY_NOT_FOUND');
+            }
+          "
+
+  # Test systemBinary: "ignore" downloads even when system binary exists
+  ignore-system-binary:
+    name: Ignore system binary
+    runs-on:
+      - nscloud-ubuntu-22.04-amd64-4x8-with-cache
+      - nscloud-cache-size-50gb
+      - nscloud-cache-tag-actions-toolkit
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+
+      - name: Cache pnpm
+        uses: namespacelabs/nscloud-cache-action@v1
+        with:
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Test install (ignore system binary, downloads instead)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node --input-type=module -e "
+            import { install, exec } from './dist/spacectl.mjs';
+            const powertoysDir = process.env.NSC_POWERTOYS_DIR;
+            const result = await install({ systemBinary: 'ignore' });
+            console.log('binPath:', result.binPath);
+            console.log('version:', result.version);
+            console.log('downloaded:', result.downloaded);
+            if (powertoysDir && result.binPath.startsWith(powertoysDir)) {
+              throw new Error('Expected binPath to NOT be in NSC_POWERTOYS_DIR');
+            }
+            const execResult = await exec(['version'], { binPath: result.binPath });
+            console.log('exec output:', execResult.stdout);
+          "
+
+  # Test installing a specific version (skips system binary with default "prefer")
   specific-version:
     name: Specific version
     runs-on:
@@ -117,7 +195,7 @@ jobs:
         run: |
           node --input-type=module -e "
             import { install, exec } from './dist/spacectl.mjs';
-            const result = await install({ version: '0.5.0', useSystemBinary: false });
+            const result = await install({ version: '0.5.0' });
             console.log('binPath:', result.binPath);
             console.log('version:', result.version);
             console.log('downloaded:', result.downloaded);
@@ -133,7 +211,7 @@ jobs:
 
   # Test installing latest version
   latest-version:
-    name: Latest version (force download)
+    name: Latest version
     runs-on:
       - nscloud-ubuntu-22.04-amd64-4x8-with-cache
       - nscloud-cache-size-50gb
@@ -179,7 +257,7 @@ jobs:
           node --input-type=module -e "
             import { install, exec } from './dist/spacectl.mjs';
             const expected = process.env.EXPECTED_VERSION;
-            const result = await install({ version: 'latest', useSystemBinary: false });
+            const result = await install({ version: 'latest' });
             console.log('binPath:', result.binPath);
             console.log('version:', result.version);
             console.log('downloaded:', result.downloaded);
