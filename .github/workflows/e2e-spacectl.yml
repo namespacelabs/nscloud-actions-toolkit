@@ -15,7 +15,7 @@ jobs:
       matrix:
         runner:
           - nscloud-ubuntu-22.04-amd64-4x8-with-cache
-          - nscloud-macos-arm64-with-cache
+          - nscloud-macos-tahoe-arm64-6x14-with-cache
     runs-on:
       - ${{ matrix.runner }}
       - nscloud-cache-size-50gb
