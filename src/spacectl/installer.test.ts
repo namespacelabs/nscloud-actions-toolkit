@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { existsSync } from "node:fs";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as core from "@actions/core";
@@ -10,6 +11,7 @@ import * as execModule from "./exec";
 import * as versionModule from "./version";
 import * as platformModule from "./platform";
 
+vi.mock("node:fs");
 vi.mock("node:fs/promises");
 vi.mock("@actions/core");
 vi.mock("@actions/io");
@@ -48,6 +50,7 @@ describe("installer", () => {
   const mockResolveVersion = vi.mocked(versionModule.resolveVersion);
   const mockNormalizeVersion = vi.mocked(versionModule.normalizeVersion);
   const mockExec = vi.mocked(execModule.exec);
+  const mockExistsSync = vi.mocked(existsSync);
   const mockFsAccess = vi.mocked(fs.access);
   const mockWhich = vi.mocked(io.which);
   const mockTcFind = vi.mocked(tc.find);
@@ -63,6 +66,7 @@ describe("installer", () => {
     mockGetArch.mockReturnValue("amd64");
     mockGetBinaryName.mockReturnValue("spacectl");
     mockNormalizeVersion.mockImplementation((v) => v.replace(/^v/, ""));
+    mockExistsSync.mockReturnValue(false);
     mockFsAccess.mockRejectedValue(new Error("not found"));
   });
 
@@ -124,6 +128,101 @@ describe("installer", () => {
 
         expect(result.binPath).toBe("/powertoys/spacectl");
         expect(result.version).toBe("2.0.0");
+        expect(result.downloaded).toBe(false);
+
+        process.env.NSC_POWERTOYS_DIR = originalEnv;
+      });
+
+      it("uses binary from default linux path when env var is not set", async () => {
+        const originalEnv = process.env.NSC_POWERTOYS_DIR;
+        delete process.env.NSC_POWERTOYS_DIR;
+
+        mockGetPlatform.mockReturnValue("linux");
+        mockExistsSync.mockReturnValue(true);
+        mockFsAccess.mockResolvedValue(undefined);
+        mockExec.mockResolvedValue({
+          exitCode: 0,
+          stdout: '{"version":"1.0.0"}',
+          stderr: "",
+        });
+
+        const result = await install();
+
+        expect(mockExistsSync).toHaveBeenCalledWith("/nsc/powertoys/spacectl");
+        expect(result.binPath).toBe("/nsc/powertoys/spacectl");
+        expect(result.version).toBe("1.0.0");
+        expect(result.downloaded).toBe(false);
+        expect(mockWhich).not.toHaveBeenCalled();
+
+        process.env.NSC_POWERTOYS_DIR = originalEnv;
+      });
+
+      it("uses binary from default macOS path when env var is not set", async () => {
+        const originalEnv = process.env.NSC_POWERTOYS_DIR;
+        delete process.env.NSC_POWERTOYS_DIR;
+
+        mockGetPlatform.mockReturnValue("darwin");
+        mockGetBinaryName.mockReturnValue("spacectl");
+        mockExistsSync.mockReturnValue(true);
+        mockFsAccess.mockResolvedValue(undefined);
+        mockExec.mockResolvedValue({
+          exitCode: 0,
+          stdout: '{"version":"1.0.0"}',
+          stderr: "",
+        });
+
+        const result = await install();
+
+        expect(mockExistsSync).toHaveBeenCalledWith("/opt/powertoys/spacectl");
+        expect(result.binPath).toBe("/opt/powertoys/spacectl");
+        expect(result.version).toBe("1.0.0");
+        expect(result.downloaded).toBe(false);
+        expect(mockWhich).not.toHaveBeenCalled();
+
+        process.env.NSC_POWERTOYS_DIR = originalEnv;
+      });
+
+      it("uses binary from default windows path with .exe extension", async () => {
+        const originalEnv = process.env.NSC_POWERTOYS_DIR;
+        delete process.env.NSC_POWERTOYS_DIR;
+
+        mockGetPlatform.mockReturnValue("windows");
+        mockGetBinaryName.mockReturnValue("spacectl.exe");
+        mockExistsSync.mockReturnValue(true);
+        mockFsAccess.mockResolvedValue(undefined);
+        mockExec.mockResolvedValue({
+          exitCode: 0,
+          stdout: '{"version":"1.0.0"}',
+          stderr: "",
+        });
+
+        const result = await install();
+
+        expect(mockExistsSync).toHaveBeenCalledWith(path.join("/nsc/powertoys", "spacectl.exe"));
+        expect(result.binPath).toBe(path.join("/nsc/powertoys", "spacectl.exe"));
+        expect(result.version).toBe("1.0.0");
+        expect(result.downloaded).toBe(false);
+        expect(mockWhich).not.toHaveBeenCalled();
+
+        process.env.NSC_POWERTOYS_DIR = originalEnv;
+      });
+
+      it("falls through default path to io.which when binary not found there", async () => {
+        const originalEnv = process.env.NSC_POWERTOYS_DIR;
+        delete process.env.NSC_POWERTOYS_DIR;
+
+        mockFsAccess.mockRejectedValue(new Error("not found"));
+        mockWhich.mockResolvedValue("/usr/local/bin/spacectl");
+        mockExec.mockResolvedValue({
+          exitCode: 0,
+          stdout: '{"version":"1.2.3"}',
+          stderr: "",
+        });
+
+        const result = await install();
+
+        expect(result.binPath).toBe("/usr/local/bin/spacectl");
+        expect(result.version).toBe("1.2.3");
         expect(result.downloaded).toBe(false);
 
         process.env.NSC_POWERTOYS_DIR = originalEnv;
