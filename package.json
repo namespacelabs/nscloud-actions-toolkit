@@ -46,7 +46,8 @@
     "@actions/exec": "^3.0.0",
     "@actions/github": "^9.0.0",
     "@actions/io": "^3.0.2",
-    "@actions/tool-cache": "^4.0.0"
+    "@actions/tool-cache": "^4.0.0",
+    "@octokit/plugin-retry": "^8.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
