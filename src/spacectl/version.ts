@@ -21,7 +21,8 @@ export async function getLatestVersion(token?: string): Promise<string> {
     core.debug(`Failed to get latest release: ${error}`);
     throw new Error(
       `Failed to resolve latest version. ` +
-        `If hitting rate limits, provide a GitHub token via options.githubToken or GITHUB_TOKEN env var.`
+        `If hitting rate limits, provide a GitHub token via options.githubToken or GITHUB_TOKEN env var.`,
+      { cause: error }
     );
   }
 }
@@ -49,7 +50,8 @@ export async function getLatestDevVersion(token?: string): Promise<string> {
     core.debug(`Failed to get dev release: ${error}`);
     throw new Error(
       `Failed to resolve dev version. ` +
-        `If hitting rate limits, provide a GitHub token via options.githubToken or GITHUB_TOKEN env var.`
+        `If hitting rate limits, provide a GitHub token via options.githubToken or GITHUB_TOKEN env var.`,
+      { cause: error }
     );
   }
 }
