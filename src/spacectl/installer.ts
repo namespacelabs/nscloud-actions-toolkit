@@ -67,11 +67,11 @@ async function findExistingBinary(): Promise<string | undefined> {
   const defaultPath = path.join(defaultDir, binaryName);
   core.debug(`Checking default powertoys path: ${defaultPath}`);
   try {
-    await fs.access(defaultPath, fs.constants.X_OK);
+    await fs.access(defaultPath, fs.constants.F_OK | fs.constants.X_OK);
     core.debug(`Found existing binary at default path: ${defaultPath}`);
     return defaultPath;
   } catch {
-    core.warning(`Binary not found at default path: ${defaultPath}`);
+    core.debug(`Binary not found at default path: ${defaultPath}`);
   }
 
   try {
