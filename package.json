@@ -1,6 +1,6 @@
 {
   "name": "@namespacelabs/actions-toolkit",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "GitHub Actions toolkit for Namespace",
   "type": "module",
   "license": "Apache-2.0",
