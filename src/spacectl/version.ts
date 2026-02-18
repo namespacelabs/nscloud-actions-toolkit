@@ -1,15 +1,21 @@
 import * as core from "@actions/core";
 import * as github from "@actions/github";
+import { retry } from "@octokit/plugin-retry";
 
 const REPO_OWNER = "namespacelabs";
 const REPO_NAME = "spacectl";
+const RETRY_OPTIONS = { retries: 3, retryAfter: 0.1 };
 
 export function normalizeVersion(version: string): string {
   return version.trim().replace(/^[vV]/, "");
 }
 
 export async function getLatestVersion(token?: string): Promise<string> {
-  const octokit = github.getOctokit(token || process.env.GITHUB_TOKEN || "");
+  const octokit = github.getOctokit(
+    token || process.env.GITHUB_TOKEN || "",
+    { retry: RETRY_OPTIONS },
+    retry
+  );
 
   try {
     const { data: release } = await octokit.rest.repos.getLatestRelease({
@@ -28,7 +34,11 @@ export async function getLatestVersion(token?: string): Promise<string> {
 }
 
 export async function getLatestDevVersion(token?: string): Promise<string> {
-  const octokit = github.getOctokit(token || process.env.GITHUB_TOKEN || "");
+  const octokit = github.getOctokit(
+    token || process.env.GITHUB_TOKEN || "",
+    { retry: RETRY_OPTIONS },
+    retry
+  );
 
   try {
     const iterator = octokit.paginate.iterator(octokit.rest.repos.listReleases, {
