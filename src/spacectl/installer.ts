@@ -59,7 +59,7 @@ async function findExistingBinary(): Promise<string | undefined> {
       core.debug(`Found existing binary in powertoys: ${powertoysPath}`);
       return powertoysPath;
     } catch {
-      core.debug(`Binary not found in powertoys dir: ${powertoysPath}`);
+      core.warning(`Binary not found in powertoys dir: ${powertoysPath}`);
     }
   }
 
