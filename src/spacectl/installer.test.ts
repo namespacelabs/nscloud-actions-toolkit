@@ -400,6 +400,44 @@ describe("installer", () => {
       });
     });
 
+    describe("mutable dev versions", () => {
+      it("skips tool cache lookup for -dev versions", async () => {
+        mockResolveVersion.mockResolvedValue("0.8.0-dev");
+        mockTcFind.mockReturnValue("/cache/spacectl/0.8.0-dev");
+        mockTcDownloadTool.mockResolvedValue("/tmp/archive.tar.gz");
+        mockTcExtractTar.mockResolvedValue("/tmp/extracted");
+        mockExec.mockResolvedValue({
+          exitCode: 0,
+          stdout: '{"version":"0.8.0-dev"}',
+          stderr: "",
+        });
+
+        const result = await install({ version: "dev" });
+
+        expect(mockTcFind).not.toHaveBeenCalled();
+        expect(mockTcDownloadTool).toHaveBeenCalled();
+        expect(result.downloaded).toBe(true);
+      });
+
+      it("does not write -dev versions to the tool cache", async () => {
+        mockResolveVersion.mockResolvedValue("0.8.0-dev");
+        mockTcFind.mockReturnValue("");
+        mockTcDownloadTool.mockResolvedValue("/tmp/archive.tar.gz");
+        mockTcExtractTar.mockResolvedValue("/tmp/extracted");
+        mockExec.mockResolvedValue({
+          exitCode: 0,
+          stdout: '{"version":"0.8.0-dev"}',
+          stderr: "",
+        });
+
+        const result = await install({ version: "dev" });
+
+        expect(mockTcCacheDir).not.toHaveBeenCalled();
+        expect(result.binPath).toBe(path.join("/tmp/extracted", "spacectl"));
+        expect(mockCoreAddPath).toHaveBeenCalledWith("/tmp/extracted");
+      });
+    });
+
     describe("error handling", () => {
       it("throws UNSUPPORTED_PLATFORM for unsupported platform", async () => {
         mockGetPlatform.mockImplementation(() => {
