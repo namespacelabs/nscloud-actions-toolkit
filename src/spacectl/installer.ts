@@ -107,6 +107,12 @@ export function getDownloadUrl(version: string, platform: Platform, arch: Arch):
   return `https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/v${version}/${filename}`;
 }
 
+function isMutableVersion(version: string): boolean {
+  // Tags like "0.8.0-dev" are reused across builds, so the same tag name
+  // points to different binaries over time. We must not cache them.
+  return version.includes("-dev");
+}
+
 async function downloadAndCache(
   version: string,
   platform: Platform,
@@ -133,6 +139,12 @@ async function downloadAndCache(
   }
 
   const extractedPath = await tc.extractTar(archivePath);
+
+  if (isMutableVersion(version)) {
+    core.info(`Skipping tool cache for mutable spacectl version ${version}`);
+    return extractedPath;
+  }
+
   const cachedPath = await tc.cacheDir(extractedPath, TOOL_NAME, version, arch);
 
   core.info(`Cached spacectl ${version} to ${cachedPath}`);
@@ -205,18 +217,20 @@ export async function install(options: InstallOptions = {}): Promise<InstallResu
     );
   }
 
-  const cached = tc.find(TOOL_NAME, targetVersion, arch);
-  if (cached) {
-    const binPath = path.join(cached, binaryName);
-    core.info(`Using cached spacectl ${targetVersion} at ${cached}`);
-    if (options.addToPath !== false) {
-      core.addPath(cached);
+  if (!isMutableVersion(targetVersion)) {
+    const cached = tc.find(TOOL_NAME, targetVersion, arch);
+    if (cached) {
+      const binPath = path.join(cached, binaryName);
+      core.info(`Using cached spacectl ${targetVersion} at ${cached}`);
+      if (options.addToPath !== false) {
+        core.addPath(cached);
+      }
+      return {
+        binPath,
+        version: targetVersion,
+        downloaded: false,
+      };
     }
-    return {
-      binPath,
-      version: targetVersion,
-      downloaded: false,
-    };
   }
 
   const cachedDir = await downloadAndCache(targetVersion, platform, arch, token);
