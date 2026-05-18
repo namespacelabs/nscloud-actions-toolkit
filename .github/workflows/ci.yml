@@ -16,7 +16,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20, 24, "lts/*"]
+        node-version: [24, 26, "lts/*"]
       fail-fast: false
 
     steps:
