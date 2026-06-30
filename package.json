@@ -9,9 +9,14 @@
     "url": "git+https://github.com/namespacelabs/nscloud-actions-toolkit.git"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "packageManager": "pnpm@10.6.2",
+  "pnpm": {
+    "overrides": {
+      "esbuild": ">=0.28.1"
+    }
+  },
   "files": [
     "dist"
   ],
@@ -42,9 +47,9 @@
     "release:finalize": "./scripts/release-finalize.sh"
   },
   "dependencies": {
-    "@actions/core": "^3.0.0",
+    "@actions/core": "^3.0.1",
     "@actions/exec": "^3.0.0",
-    "@actions/github": "^9.1.0",
+    "@actions/github": "^9.1.1",
     "@actions/io": "^3.0.2",
     "@actions/tool-cache": "^4.0.0",
     "@octokit/plugin-retry": "^8.1.0"
@@ -52,14 +57,14 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.0.1",
-    "@typescript-eslint/eslint-plugin": "^8.58.2",
-    "@typescript-eslint/parser": "^8.58.2",
-    "eslint": "^10.2.0",
-    "prettier": "^3.8.3",
-    "tsdown": "^0.22.0",
-    "typescript": "^6.0.2",
-    "typescript-eslint": "^8.58.2",
-    "vite": "^8.0.8",
-    "vitest": "^4.1.4"
+    "@typescript-eslint/eslint-plugin": "^8.62.1",
+    "@typescript-eslint/parser": "^8.62.1",
+    "eslint": "^10.6.0",
+    "prettier": "^3.9.4",
+    "tsdown": "^0.22.3",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.62.1",
+    "vite": "^8.1.2",
+    "vitest": "^4.1.9"
   }
 }
