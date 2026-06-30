@@ -9,7 +9,7 @@
     "url": "git+https://github.com/namespacelabs/nscloud-actions-toolkit.git"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "packageManager": "pnpm@10.6.2",
   "pnpm": {
