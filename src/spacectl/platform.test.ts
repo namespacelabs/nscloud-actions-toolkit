@@ -1,5 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { getPlatform, getArch, getBinaryName, type Platform, type Arch } from "./platform";
+import * as fs from "node:fs/promises";
+import * as os from "node:os";
+import * as path from "node:path";
+import {
+  getPlatform,
+  getArch,
+  getBinaryName,
+  getDefaultPowertoysDir,
+  isExecutable,
+  type Platform,
+  type Arch,
+} from "./platform";
 
 describe("platform", () => {
   describe("getPlatform", () => {
@@ -41,6 +52,56 @@ describe("platform", () => {
       } else {
         expect(binaryName).toBe("spacectl");
       }
+    });
+  });
+
+  describe("getDefaultPowertoysDir", () => {
+    it("returns the platform-specific default powertoys directory", () => {
+      const platform = getPlatform();
+      const dir = getDefaultPowertoysDir();
+
+      switch (platform) {
+        case "darwin":
+          expect(dir).toBe("/opt/powertoys");
+          break;
+        case "linux":
+          expect(dir).toBe("/nsc/powertoys");
+          break;
+        case "windows":
+          expect(dir).toBe("C:\\namespace\\powertoys");
+          break;
+      }
+    });
+  });
+
+  describe("isExecutable", () => {
+    it("returns false for a non-existent file", async () => {
+      const missing = path.join(os.tmpdir(), "spacectl-does-not-exist-xyz");
+      expect(await isExecutable(missing)).toBe(false);
+    });
+
+    it("returns true for an existing executable file", async () => {
+      const dir = await fs.mkdtemp(path.join(os.tmpdir(), "spacectl-"));
+      const file = path.join(dir, "bin");
+      await fs.writeFile(file, "");
+
+      if (getPlatform() !== "windows") {
+        await fs.chmod(file, 0o755);
+      }
+
+      expect(await isExecutable(file)).toBe(true);
+    });
+
+    it("returns false for a non-executable file on POSIX", async () => {
+      // Windows has no executable bit, so existence alone counts there.
+      if (getPlatform() === "windows") return;
+
+      const dir = await fs.mkdtemp(path.join(os.tmpdir(), "spacectl-"));
+      const file = path.join(dir, "data");
+      await fs.writeFile(file, "");
+      await fs.chmod(file, 0o644);
+
+      expect(await isExecutable(file)).toBe(false);
     });
   });
 });

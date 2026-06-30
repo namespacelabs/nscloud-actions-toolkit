@@ -1,12 +1,19 @@
 import { existsSync } from "node:fs";
-import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as core from "@actions/core";
 import * as io from "@actions/io";
 import * as tc from "@actions/tool-cache";
 
 import { exec } from "./exec";
-import { getPlatform, getArch, getBinaryName, type Platform, type Arch } from "./platform";
+import {
+  getPlatform,
+  getArch,
+  getBinaryName,
+  getDefaultPowertoysDir,
+  isExecutable,
+  type Platform,
+  type Arch,
+} from "./platform";
 import { resolveVersion, normalizeVersion } from "./version";
 
 const TOOL_NAME = "spacectl";
@@ -55,26 +62,21 @@ async function findExistingBinary(): Promise<string | undefined> {
 
   if (powertoysDir) {
     const powertoysPath = path.join(powertoysDir, binaryName);
-    try {
-      await fs.access(powertoysPath, fs.constants.X_OK);
+    if (await isExecutable(powertoysPath)) {
       core.debug(`Found existing binary in powertoys: ${powertoysPath}`);
       return powertoysPath;
-    } catch {
-      core.warning(`Binary at powertoys path is not executable: ${powertoysPath}`);
     }
+    core.warning(`Binary at powertoys path is not executable: ${powertoysPath}`);
   }
 
-  const defaultDir = getPlatform() === "darwin" ? "/opt/powertoys" : "/nsc/powertoys";
-  const defaultPath = path.join(defaultDir, binaryName);
+  const defaultPath = path.join(getDefaultPowertoysDir(), binaryName);
   core.debug(`Checking default powertoys path: ${defaultPath}`);
   if (existsSync(defaultPath)) {
-    try {
-      await fs.access(defaultPath, fs.constants.X_OK);
+    if (await isExecutable(defaultPath)) {
       core.debug(`Found existing binary at default path: ${defaultPath}`);
       return defaultPath;
-    } catch {
-      core.warning(`Binary at default path is not executable: ${defaultPath}`);
     }
+    core.warning(`Binary at default path is not executable: ${defaultPath}`);
   } else {
     core.debug(`Binary not found at default path: ${defaultPath}`);
   }

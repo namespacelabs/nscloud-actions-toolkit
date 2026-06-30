@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { existsSync } from "node:fs";
-import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as core from "@actions/core";
 import * as io from "@actions/io";
@@ -12,7 +11,6 @@ import * as versionModule from "./version";
 import * as platformModule from "./platform";
 
 vi.mock("node:fs");
-vi.mock("node:fs/promises");
 vi.mock("@actions/core");
 vi.mock("@actions/io");
 vi.mock("@actions/tool-cache");
@@ -47,11 +45,12 @@ describe("installer", () => {
   const mockGetPlatform = vi.mocked(platformModule.getPlatform);
   const mockGetArch = vi.mocked(platformModule.getArch);
   const mockGetBinaryName = vi.mocked(platformModule.getBinaryName);
+  const mockGetDefaultPowertoysDir = vi.mocked(platformModule.getDefaultPowertoysDir);
   const mockResolveVersion = vi.mocked(versionModule.resolveVersion);
   const mockNormalizeVersion = vi.mocked(versionModule.normalizeVersion);
   const mockExec = vi.mocked(execModule.exec);
   const mockExistsSync = vi.mocked(existsSync);
-  const mockFsAccess = vi.mocked(fs.access);
+  const mockIsExecutable = vi.mocked(platformModule.isExecutable);
   const mockWhich = vi.mocked(io.which);
   const mockTcFind = vi.mocked(tc.find);
   const mockTcDownloadTool = vi.mocked(tc.downloadTool);
@@ -65,9 +64,10 @@ describe("installer", () => {
     mockGetPlatform.mockReturnValue("linux");
     mockGetArch.mockReturnValue("amd64");
     mockGetBinaryName.mockReturnValue("spacectl");
+    mockGetDefaultPowertoysDir.mockReturnValue("/nsc/powertoys");
     mockNormalizeVersion.mockImplementation((v) => v.replace(/^v/, ""));
     mockExistsSync.mockReturnValue(false);
-    mockFsAccess.mockRejectedValue(new Error("not found"));
+    mockIsExecutable.mockResolvedValue(false);
   });
 
   afterEach(() => {
@@ -117,7 +117,7 @@ describe("installer", () => {
         const originalEnv = process.env.NSC_POWERTOYS_DIR;
         process.env.NSC_POWERTOYS_DIR = "/powertoys";
 
-        mockFsAccess.mockResolvedValue(undefined);
+        mockIsExecutable.mockResolvedValue(true);
         mockExec.mockResolvedValue({
           exitCode: 0,
           stdout: '{"version":"2.0.0"}',
@@ -126,7 +126,7 @@ describe("installer", () => {
 
         const result = await install();
 
-        expect(result.binPath).toBe("/powertoys/spacectl");
+        expect(result.binPath).toBe(path.join("/powertoys", "spacectl"));
         expect(result.version).toBe("2.0.0");
         expect(result.downloaded).toBe(false);
 
@@ -139,7 +139,7 @@ describe("installer", () => {
 
         mockGetPlatform.mockReturnValue("linux");
         mockExistsSync.mockReturnValue(true);
-        mockFsAccess.mockResolvedValue(undefined);
+        mockIsExecutable.mockResolvedValue(true);
         mockExec.mockResolvedValue({
           exitCode: 0,
           stdout: '{"version":"1.0.0"}',
@@ -148,8 +148,8 @@ describe("installer", () => {
 
         const result = await install();
 
-        expect(mockExistsSync).toHaveBeenCalledWith("/nsc/powertoys/spacectl");
-        expect(result.binPath).toBe("/nsc/powertoys/spacectl");
+        expect(mockExistsSync).toHaveBeenCalledWith(path.join("/nsc/powertoys", "spacectl"));
+        expect(result.binPath).toBe(path.join("/nsc/powertoys", "spacectl"));
         expect(result.version).toBe("1.0.0");
         expect(result.downloaded).toBe(false);
         expect(mockWhich).not.toHaveBeenCalled();
@@ -163,8 +163,9 @@ describe("installer", () => {
 
         mockGetPlatform.mockReturnValue("darwin");
         mockGetBinaryName.mockReturnValue("spacectl");
+        mockGetDefaultPowertoysDir.mockReturnValue("/opt/powertoys");
         mockExistsSync.mockReturnValue(true);
-        mockFsAccess.mockResolvedValue(undefined);
+        mockIsExecutable.mockResolvedValue(true);
         mockExec.mockResolvedValue({
           exitCode: 0,
           stdout: '{"version":"1.0.0"}',
@@ -173,8 +174,8 @@ describe("installer", () => {
 
         const result = await install();
 
-        expect(mockExistsSync).toHaveBeenCalledWith("/opt/powertoys/spacectl");
-        expect(result.binPath).toBe("/opt/powertoys/spacectl");
+        expect(mockExistsSync).toHaveBeenCalledWith(path.join("/opt/powertoys", "spacectl"));
+        expect(result.binPath).toBe(path.join("/opt/powertoys", "spacectl"));
         expect(result.version).toBe("1.0.0");
         expect(result.downloaded).toBe(false);
         expect(mockWhich).not.toHaveBeenCalled();
@@ -188,8 +189,9 @@ describe("installer", () => {
 
         mockGetPlatform.mockReturnValue("windows");
         mockGetBinaryName.mockReturnValue("spacectl.exe");
+        mockGetDefaultPowertoysDir.mockReturnValue("C:\\namespace\\powertoys");
         mockExistsSync.mockReturnValue(true);
-        mockFsAccess.mockResolvedValue(undefined);
+        mockIsExecutable.mockResolvedValue(true);
         mockExec.mockResolvedValue({
           exitCode: 0,
           stdout: '{"version":"1.0.0"}',
@@ -198,8 +200,10 @@ describe("installer", () => {
 
         const result = await install();
 
-        expect(mockExistsSync).toHaveBeenCalledWith(path.join("/nsc/powertoys", "spacectl.exe"));
-        expect(result.binPath).toBe(path.join("/nsc/powertoys", "spacectl.exe"));
+        expect(mockExistsSync).toHaveBeenCalledWith(
+          path.join("C:\\namespace\\powertoys", "spacectl.exe")
+        );
+        expect(result.binPath).toBe(path.join("C:\\namespace\\powertoys", "spacectl.exe"));
         expect(result.version).toBe("1.0.0");
         expect(result.downloaded).toBe(false);
         expect(mockWhich).not.toHaveBeenCalled();
@@ -211,7 +215,7 @@ describe("installer", () => {
         const originalEnv = process.env.NSC_POWERTOYS_DIR;
         delete process.env.NSC_POWERTOYS_DIR;
 
-        mockFsAccess.mockRejectedValue(new Error("not found"));
+        mockIsExecutable.mockResolvedValue(false);
         mockWhich.mockResolvedValue("/usr/local/bin/spacectl");
         mockExec.mockResolvedValue({
           exitCode: 0,
@@ -377,6 +381,33 @@ describe("installer", () => {
           expect.any(Object)
         );
         expect(mockCoreAddPath).toHaveBeenCalledWith("/cache/spacectl/3.0.0");
+      });
+
+      it("downloads the windows binary with .exe and windows URL", async () => {
+        mockGetPlatform.mockReturnValue("windows");
+        mockGetBinaryName.mockReturnValue("spacectl.exe");
+        mockWhich.mockRejectedValue(new Error("not found"));
+        mockResolveVersion.mockResolvedValue("3.0.0");
+        mockTcFind.mockReturnValue("");
+        mockTcDownloadTool.mockResolvedValue("C:\\tmp\\archive.tar.gz");
+        mockTcExtractTar.mockResolvedValue("C:\\tmp\\extracted");
+        mockTcCacheDir.mockResolvedValue("C:\\cache\\spacectl\\3.0.0");
+        mockExec.mockResolvedValue({
+          exitCode: 0,
+          stdout: '{"version":"3.0.0"}',
+          stderr: "",
+        });
+
+        const result = await install();
+
+        expect(result.binPath).toBe(path.join("C:\\cache\\spacectl\\3.0.0", "spacectl.exe"));
+        expect(result.downloaded).toBe(true);
+        expect(mockTcDownloadTool).toHaveBeenCalledWith(
+          expect.stringContaining("spacectl_3.0.0_windows_amd64.tar.gz"),
+          undefined,
+          undefined,
+          expect.any(Object)
+        );
       });
 
       it("includes auth header when token provided", async () => {

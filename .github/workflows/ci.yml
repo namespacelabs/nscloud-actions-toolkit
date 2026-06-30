@@ -8,16 +8,23 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on:
-      - nscloud-ubuntu-22.04-amd64-4x8-with-cache
-      - nscloud-cache-size-50gb
-      - nscloud-cache-tag-actions-toolkit
-
+  verify:
+    name: verify (${{ matrix.os }}, node ${{ matrix.node-version }})
     strategy:
-      matrix:
-        node-version: [20, 24, "lts/*"]
       fail-fast: false
+      matrix:
+        os: [linux, macos, windows]
+        node-version: [20, 24, "lts/*"]
+        include:
+          - os: linux
+            runner: nscloud-ubuntu-22.04-amd64-4x8
+          - os: macos
+            runner: nscloud-macos-tahoe-arm64-6x14
+          - os: windows
+            runner: nscloud-windows-2022-amd64-4x8
+
+    runs-on:
+      - ${{ matrix.runner }}
 
     steps:
       - name: Checkout
@@ -30,11 +37,6 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
-
-      - name: Cache pnpm
-        uses: namespacelabs/nscloud-cache-action@v1
-        with:
-          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -55,10 +57,24 @@ jobs:
         run: pnpm run build
 
       - name: Verify no uncommitted changes
+        shell: bash
         run: |
           if [ -n "$(git status --porcelain)" ]; then
             echo "Uncommitted changes detected after build:"
             git status --porcelain
             git diff
+            exit 1
+          fi
+
+  verify-ok:
+    name: Verify
+    if: always()
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check matrix result
+        run: |
+          if [ "${{ needs.verify.result }}" != "success" ]; then
+            echo "::error::One or more verify matrix jobs failed or were cancelled"
             exit 1
           fi

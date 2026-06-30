@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as actionsExec from "@actions/exec";
 import { exec, SpacectlExecError } from "./exec";
+import { getBinaryName } from "./platform";
 
 vi.mock("@actions/exec");
 
@@ -48,7 +49,7 @@ describe("exec", () => {
     await exec(["version"]);
 
     expect(mockExec).toHaveBeenCalledWith(
-      "spacectl",
+      getBinaryName(),
       ["version", "--output=json"],
       expect.any(Object)
     );

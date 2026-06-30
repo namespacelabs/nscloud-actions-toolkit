@@ -7,15 +7,26 @@ on:
     branches: ["*"]
   workflow_dispatch:
 
+# Use bash everywhere so the POSIX-style run steps work on the Windows runner too.
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  # Test systemBinary: "require" uses existing binary
+  # Test systemBinary: "require". Namespace Linux/macOS runners provide a system
   require-system-binary:
-    name: Require system binary (${{ matrix.runner }})
+    name: Require system binary (${{ matrix.os }})
     strategy:
       matrix:
-        runner:
-          - nscloud-ubuntu-22.04-amd64-4x8-with-cache
-          - nscloud-macos-tahoe-arm64-6x14-with-cache
+        include:
+          - os: linux
+            runner: nscloud-ubuntu-22.04-amd64-4x8-with-cache
+          - os: macos
+            runner: nscloud-macos-tahoe-arm64-6x14-with-cache
+          # Powertoys not currently mounted
+          # - os: windows
+          #   runner: nscloud-windows-2022-amd64-4x8-with-cache
+
     runs-on:
       - ${{ matrix.runner }}
       - nscloud-cache-size-50gb
@@ -113,9 +124,19 @@ jobs:
 
   # Test systemBinary: "ignore" downloads even when system binary exists
   ignore-system-binary:
-    name: Ignore system binary
+    name: Ignore system binary (${{ matrix.os }})
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            runner: nscloud-ubuntu-22.04-amd64-4x8-with-cache
+          - os: macos
+            runner: nscloud-macos-tahoe-arm64-6x14-with-cache
+          - os: windows
+            runner: nscloud-windows-2022-amd64-4x8-with-cache
+
     runs-on:
-      - nscloud-ubuntu-22.04-amd64-4x8-with-cache
+      - ${{ matrix.runner }}
       - nscloud-cache-size-50gb
       - nscloud-cache-tag-actions-toolkit
 
@@ -162,9 +183,19 @@ jobs:
 
   # Test installing a specific version (skips system binary with default "prefer")
   specific-version:
-    name: Specific version
+    name: Specific version (${{ matrix.os }})
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            runner: nscloud-ubuntu-22.04-amd64-4x8-with-cache
+          - os: macos
+            runner: nscloud-macos-tahoe-arm64-6x14-with-cache
+          - os: windows
+            runner: nscloud-windows-2022-amd64-4x8-with-cache
+
     runs-on:
-      - nscloud-ubuntu-22.04-amd64-4x8-with-cache
+      - ${{ matrix.runner }}
       - nscloud-cache-size-50gb
       - nscloud-cache-tag-actions-toolkit
 
@@ -191,16 +222,19 @@ jobs:
       - name: Build
         run: pnpm run build
 
+      - name: Clear spacectl tool cache
+        run: rm -rf "$RUNNER_TOOL_CACHE/spacectl"
+
       - name: Test install (specific version)
         run: |
           node --input-type=module -e "
             import { install, exec } from './dist/spacectl.mjs';
-            const result = await install({ version: '0.5.0' });
+            const result = await install({ version: '0.12.0' });
             console.log('binPath:', result.binPath);
             console.log('version:', result.version);
             console.log('downloaded:', result.downloaded);
-            if (result.version !== '0.5.0') {
-              throw new Error('Expected version 0.5.0, got ' + result.version);
+            if (result.version !== '0.12.0') {
+              throw new Error('Expected version 0.12.0, got ' + result.version);
             }
             if (result.downloaded !== true) {
               throw new Error('Expected downloaded to be true for fresh install');
@@ -211,9 +245,19 @@ jobs:
 
   # Test installing latest version
   latest-version:
-    name: Latest version
+    name: Latest version (${{ matrix.os }})
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            runner: nscloud-ubuntu-22.04-amd64-4x8-with-cache
+          - os: macos
+            runner: nscloud-macos-tahoe-arm64-6x14-with-cache
+          - os: windows
+            runner: nscloud-windows-2022-amd64-4x8-with-cache
+
     runs-on:
-      - nscloud-ubuntu-22.04-amd64-4x8-with-cache
+      - ${{ matrix.runner }}
       - nscloud-cache-size-50gb
       - nscloud-cache-tag-actions-toolkit
 
@@ -248,6 +292,9 @@ jobs:
           LATEST=$(gh api repos/namespacelabs/spacectl/releases/latest --jq '.tag_name' | sed 's/^v//')
           echo "version=$LATEST" >> $GITHUB_OUTPUT
           echo "Latest version: $LATEST"
+
+      - name: Clear spacectl tool cache
+        run: rm -rf "$RUNNER_TOOL_CACHE/spacectl"
 
       - name: Test install (latest)
         env:
