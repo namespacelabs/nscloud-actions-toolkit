@@ -14,8 +14,6 @@ defaults:
 
 jobs:
   # Test systemBinary: "require". Namespace Linux/macOS runners provide a system
-  # spacectl in NSC_POWERTOYS_DIR, so install succeeds and uses it. Windows
-  # runners have no powertoys, so install must fail with SYSTEM_BINARY_NOT_FOUND.
   require-system-binary:
     name: Require system binary (${{ matrix.os }})
     strategy:
@@ -25,8 +23,9 @@ jobs:
             runner: nscloud-ubuntu-22.04-amd64-4x8-with-cache
           - os: macos
             runner: nscloud-macos-tahoe-arm64-6x14-with-cache
-          - os: windows
-            runner: nscloud-windows-2022-amd64-4x8-with-cache
+          # Powertoys not currently mounted
+          # - os: windows
+          #   runner: nscloud-windows-2022-amd64-4x8-with-cache
 
     runs-on:
       - ${{ matrix.runner }}
