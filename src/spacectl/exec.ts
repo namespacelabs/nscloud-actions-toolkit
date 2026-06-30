@@ -1,5 +1,7 @@
 import * as actionsExec from "@actions/exec";
 
+import { getBinaryName } from "./platform";
+
 export type ExecOptions = Omit<
   actionsExec.ExecOptions,
   "listeners" | "ignoreReturnCode" | "silent"
@@ -34,7 +36,7 @@ export async function exec(
   args: string[],
   options?: ExecOptions & { binPath?: string }
 ): Promise<ExecResult> {
-  const binPath = options?.binPath ?? "spacectl"; // install() should have added to path by default
+  const binPath = options?.binPath ?? getBinaryName();
   const execArgs = [...args, "--output=json"];
 
   let stdout = "";
