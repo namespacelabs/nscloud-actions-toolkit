@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [linux, macos, windows]
-        node-version: [20, 24, "lts/*"]
+        node-version: [24, 26, "lts/*"]
         include:
           - os: linux
             runner: nscloud-ubuntu-22.04-amd64-4x8
