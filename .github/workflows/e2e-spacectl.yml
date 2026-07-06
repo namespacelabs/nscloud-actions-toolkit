@@ -23,9 +23,8 @@ jobs:
             runner: nscloud-ubuntu-22.04-amd64-4x8-with-cache
           - os: macos
             runner: nscloud-macos-tahoe-arm64-6x14-with-cache
-          # Powertoys not currently mounted
-          # - os: windows
-          #   runner: nscloud-windows-2022-amd64-4x8-with-cache
+          - os: windows
+            runner: nscloud-windows-2022-amd64-4x8-with-cache
 
     runs-on:
       - ${{ matrix.runner }}
