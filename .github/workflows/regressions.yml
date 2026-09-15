@@ -1,0 +1,51 @@
+name: Regressions
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: ["*"]
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  malformed-event-payload:
+    name: Import with malformed event payload
+    runs-on:
+      - nscloud-ubuntu-22.04-amd64-4x8-with-cache
+      - nscloud-cache-size-50gb
+      - nscloud-cache-tag-actions-toolkit
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Cache pnpm
+        uses: namespacelabs/nscloud-cache-action@v1
+        with:
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Import spacectl while event payload is incomplete
+        run: |
+          event_path="$RUNNER_TEMP/incomplete-event.json"
+          printf '%s' '{"action":"push"' > "$event_path"
+
+          GITHUB_EVENT_PATH="$event_path" \
+            node --input-type=module -e "await import('./dist/spacectl.mjs')"
