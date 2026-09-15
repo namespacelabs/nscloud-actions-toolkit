@@ -1,24 +1,30 @@
 import * as core from "@actions/core";
-import * as github from "@actions/github";
+import { Octokit } from "@octokit/core";
+import { paginateRest } from "@octokit/plugin-paginate-rest";
 import { retry } from "@octokit/plugin-retry";
 
 const REPO_OWNER = "namespacelabs";
 const REPO_NAME = "spacectl";
 const RETRY_OPTIONS = { retries: 3, retryAfter: 0.1 };
+const GitHub = Octokit.plugin(paginateRest, retry);
+
+function createGitHubClient(token?: string) {
+  const auth = token || process.env.GITHUB_TOKEN;
+  return new GitHub({
+    ...(auth ? { auth } : {}),
+    retry: RETRY_OPTIONS,
+  });
+}
 
 export function normalizeVersion(version: string): string {
   return version.trim().replace(/^[vV]/, "");
 }
 
 export async function getLatestVersion(token?: string): Promise<string> {
-  const octokit = github.getOctokit(
-    token || process.env.GITHUB_TOKEN || "",
-    { retry: RETRY_OPTIONS },
-    retry
-  );
+  const github = createGitHubClient(token);
 
   try {
-    const { data: release } = await octokit.rest.repos.getLatestRelease({
+    const { data: release } = await github.request("GET /repos/{owner}/{repo}/releases/latest", {
       owner: REPO_OWNER,
       repo: REPO_NAME,
     });
@@ -34,14 +40,10 @@ export async function getLatestVersion(token?: string): Promise<string> {
 }
 
 export async function getLatestDevVersion(token?: string): Promise<string> {
-  const octokit = github.getOctokit(
-    token || process.env.GITHUB_TOKEN || "",
-    { retry: RETRY_OPTIONS },
-    retry
-  );
+  const github = createGitHubClient(token);
 
   try {
-    const iterator = octokit.paginate.iterator(octokit.rest.repos.listReleases, {
+    const iterator = github.paginate.iterator("GET /repos/{owner}/{repo}/releases", {
       owner: REPO_OWNER,
       repo: REPO_NAME,
       per_page: 100,
